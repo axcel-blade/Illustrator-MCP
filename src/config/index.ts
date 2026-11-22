@@ -1,6 +1,8 @@
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import * as util from "node:util";
 import { z } from "zod";
 
 const EnvSchema = z.object({
@@ -34,6 +36,22 @@ export interface AppConfig {
 }
 
 export const PROJECT_ROOT = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+
+/**
+ * Load KEY=value pairs from <project>/.env (or ILLUSTRATOR_MCP_ENV_FILE) into process.env.
+ * Only keys that are not already set are filled: the MCP client's "env" block always wins.
+ * Returns the file that was loaded, if any.
+ */
+export function loadDotEnv(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const file = env.ILLUSTRATOR_MCP_ENV_FILE ? resolve(env.ILLUSTRATOR_MCP_ENV_FILE) : join(PROJECT_ROOT, ".env");
+  if (!existsSync(file)) return undefined;
+  const parse = (util as { parseEnv?: (text: string) => Record<string, string> }).parseEnv;
+  if (!parse) return undefined; /* Node < 20.12 */
+  for (const [k, v] of Object.entries(parse(readFileSync(file, "utf8")))) {
+    if (env[k] === undefined) env[k] = v;
+  }
+  return file;
+}
 
 export function isLoopback(host: string): boolean {
   return host === "127.0.0.1" || host === "localhost" || host === "::1";

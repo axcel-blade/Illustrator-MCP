@@ -1,6 +1,6 @@
 # MCP tool reference
 
-Generated from the server (148 tools) by `node scripts/gen-docs.mjs`. Coordinates follow [COORDINATES.md](COORDINATES.md).
+Generated from the server (178 tools) by `node scripts/gen-docs.mjs`. Coordinates follow [COORDINATES.md](COORDINATES.md).
 
 ## `illustrator_status`
 
@@ -1844,3 +1844,311 @@ Apply a stored design system to the active document: adds its palette as a swatc
 | `swatches` | boolean |  |
 | `typography` | boolean |  |
 | `dryRun` | boolean |  |
+
+## `offset_path`
+
+Offset Path: create a path offset outward (positive) or inward (negative) from each target. Keeps the originals unless replace: true. Result is expanded vector paths.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+| `offset` * | number |  |
+| `join` | string |  |
+| `miterLimit` | number |  |
+| `replace` | boolean |  |
+| `name` | string | Object name, used later to target it |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+
+## `outline_stroke`
+
+Outline Stroke: convert each target's stroke into a filled path (Object > Path > Outline Stroke).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+| `name` | string | Object name, used later to target it |
+
+## `expand_objects`
+
+Expand targets. mode 'appearance' flattens live effects (Expand Appearance); 'full' also expands fills/strokes, symbols, blends and envelopes into plain paths.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+| `mode` | string |  |
+| `name` | string | Object name, used later to target it |
+
+## `create_blend`
+
+Make a blend between 2+ objects (Object > Blend > Make, smooth color steps). expand: true turns it into separate editable paths.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` * | array |  |
+| `expand` | boolean |  |
+| `name` | string | Object name, used later to target it |
+
+## `release_blend`
+
+Release a blend back into its original objects.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+
+## `release_clipping_mask`
+
+Release a clipping group: the mask path and contents become ordinary objects again.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+
+## `release_compound_path`
+
+Release a compound path into its separate paths.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+
+## `create_text_style`
+
+Create or update a named character or paragraph style (sizes in pt). Paragraph styles take both character and paragraph attributes.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `kind` * | string |  |
+| `name` * | string |  |
+| `character` | object |  |
+| `paragraph` | object |  |
+
+## `apply_text_style`
+
+Apply a named character or paragraph style to text frames (clears local overrides unless clearOverrides: false).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` * | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `kind` * | string |  |
+| `style` * | string |  |
+| `clearOverrides` | boolean |  |
+
+## `list_styles`
+
+List the document's character styles, paragraph styles, graphic styles, brushes and symbols.
+
+## `apply_graphic_style`
+
+Apply a graphic style from the Graphic Styles panel to objects (merge: true adds it on top of the current appearance).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+| `style` * | string |  |
+| `merge` | boolean |  |
+
+## `apply_brush`
+
+Apply a brush from the document's Brushes panel (calligraphic, art, pattern, bristle, scatter) to paths.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` | array | Multiple object references; defaults to current selection |
+| `brush` * | string |  |
+
+## `create_spot_color`
+
+Create (or update) a named spot or global process color swatch; optionally apply it with a tint to targets' fill or stroke.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `name` * | string |  |
+| `color` * | string |  |
+| `process` | boolean | true = global process color instead of spot |
+| `targets` | array | Multiple object references; defaults to current selection |
+| `applyTo` | string |  |
+| `tint` | number |  |
+
+## `create_swatch_group`
+
+Create a named swatch group (color group) containing the given colors.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `name` * | string |  |
+| `colors` * | array |  |
+
+## `list_swatches`
+
+List swatch groups, their swatches and the spot/global colors in the document.
+
+## `place_symbol`
+
+Place an instance of a document symbol at x/y (top-left, artboard origin, y down), optionally resized.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `symbol` * | string |  |
+| `x` * | number |  |
+| `y` * | number |  |
+| `width` | number |  |
+| `height` | number |  |
+| `name` | string | Object name, used later to target it |
+| `layer` | string | Target layer name (created if missing) |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+
+## `create_area_text`
+
+Create area (paragraph) text that wraps inside a box, with optional columns/rows and character/paragraph attributes. Reports overflow.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `content` * | string |  |
+| `x` * | number |  |
+| `y` * | number |  |
+| `width` * | number |  |
+| `height` * | number |  |
+| `columns` | integer |  |
+| `rows` | integer |  |
+| `gutter` | number |  |
+| `character` | object |  |
+| `paragraph` | object |  |
+| `name` | string | Object name, used later to target it |
+| `layer` | string | Target layer name (created if missing) |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+
+## `thread_text_frames`
+
+Thread area text frames in order so overflow text flows from each frame into the next.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `targets` * | array |  |
+
+## `set_text_columns`
+
+Set rows/columns and gutters of area text (Type > Area Type Options).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` * | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `columns` | integer |  |
+| `rows` | integer |  |
+| `columnGutter` | number |  |
+| `rowGutter` | number |  |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+
+## `set_text_attributes`
+
+Set detailed character attributes (tracking, kerning, leading, baseline shift, scale, caps, super/subscript, OpenType ligatures/fractions/figures...) and paragraph attributes (indents, spacing, hyphenation, tab stops) on a frame or a character range. Values in pt.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` * | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `range` | object | Character range inside the frame; default whole frame |
+| `character` | object |  |
+| `paragraph` | object |  |
+
+## `find_replace_text`
+
+Find and replace text across all text frames (or the given targets), keeping surrounding formatting. Plain-text match.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `find` * | string |  |
+| `replace` * | string |  |
+| `caseSensitive` | boolean |  |
+| `targets` | array | Multiple object references; defaults to current selection |
+
+## `run_action`
+
+Play a recorded Illustrator action (Actions panel) by action and set name, optionally on selected targets. Actions can do anything the user recorded; confirm with the user first.
+
+> Destructive — requires `confirm: true`.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `action` * | string |  |
+| `set` * | string |  |
+| `targets` | array | Multiple object references; defaults to current selection |
+| `confirm` | boolean |  |
+
+## `fit_artboard_to_artwork`
+
+Resize an artboard to fit its artwork (or the given targets), with optional padding.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `targets` | array | Multiple object references; defaults to current selection |
+| `padding` | number |  |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+
+## `export_artboards`
+
+Batch-export every artboard (or listed ones) to separate files in a folder, one file per artboard per format, named <prefix>-<artboard name>.<ext>.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `folder` * | string |  |
+| `prefix` | string |  |
+| `formats` * | array |  |
+| `artboards` | array |  |
+| `ppi` | number |  |
+| `overwrite` | boolean |  |
+
+## `data_merge_export`
+
+Data merge: for each row, set named text frames' contents (row keys = text object names), export a PNG/JPG/PDF per row, then restore the original text.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `rows` * | array |  |
+| `folder` * | string |  |
+| `fileNameKey` | string | Row key used for each file name; default row-N |
+| `format` | string |  |
+| `ppi` | number |  |
+| `overwrite` | boolean |  |
+
+## `bind_variable`
+
+Bind an Illustrator variable (Variables panel) to an object: 'text' binds a text frame's content, 'visibility' binds visibility. Creates the variable if missing.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` * | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `variable` * | string |  |
+| `kind` | string |  |
+
+## `list_variables`
+
+List Illustrator variables, what they are bound to, and saved data sets.
+
+## `capture_dataset`
+
+Capture the current values of all variables as a named data set.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `name` | string |  |
+
+## `apply_dataset`
+
+Display a saved data set (sets every bound object to that data set's values).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `name` * | string |  |
+
+## `print_document`
+
+Print the active document to a printer (physical output). Ask the user first and pass confirm: true.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `printer` | string |  |
+| `copies` | integer |  |
+| `confirm` | boolean |  |

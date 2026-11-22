@@ -69,7 +69,12 @@ MCP.ops.export_svg = function (a) {
   if (!f.exists && a.artboard !== undefined) {
     /* Illustrator appends "_Artboard N" style suffixes for ranged SVG exports. */
     var folder = f.parent, base = f.name.replace(/\.svg$/i, "");
-    var found = folder.getFiles(base + "*.svg");
+    /* getFiles masks are unreliable with hyphenated names; filter the listing instead. */
+    var all = folder.getFiles(), found = [];
+    for (var g = 0; g < all.length; g++) {
+      var nm = decodeURI(all[g].name);
+      if (nm.indexOf(base) === 0 && /\.svg$/i.test(nm)) found.push(all[g]);
+    }
     if (found.length) return { files: [{ path: found[0].fsName, bytes: found[0].length }], note: "Illustrator renamed the output." };
   }
   return { files: [MCP.verifyWritten(a.path)] };

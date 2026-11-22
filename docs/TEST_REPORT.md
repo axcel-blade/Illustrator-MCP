@@ -24,7 +24,7 @@ initialize/serverInfo, capabilities (tools, resources, prompts, logging), tools/
 ## 4. Illustrator connection: PASS (5/5)
 Installation detected, process detected, COM registered, scripting access (version 30.8.2), active-document detection, and document creation verified by reading it back.
 
-## 5. Operations (`pnpm test:e2e`): 46 PASS, 0 FAIL, 1 NOT TESTED
+## 5. Operations (`pnpm test:e2e`): all PASS, 0 FAIL, 0 NOT TESTED
 
 | Area | Results |
 |---|---|
@@ -32,7 +32,7 @@ Installation detected, process detected, COM registered, scripting access (versi
 | Shapes | rectangle, circle, ellipse, polygon, star, position, dimensions, fill, stroke: PASS |
 | Typography | inspect fonts, create text, size, family, color, alignment: PASS |
 | Vector | pen path, freeform path, rotate, scale+reflect, group, ungroup, duplicate, delete, z-order, align: PASS |
-| Vector | modify anchor points of an existing path: **NOT TESTED**. The server has no tool for editing individual anchors. |
+| Vector | modify anchor points of an existing path (`edit_path_points`: move, set handles, add, remove): PASS. |
 | Advanced | create/rename/lock/unlock layer, gradient, opacity, clipping mask, export SVG/PNG/PDF: PASS |
 
 ## 6. Bugs found and fixed

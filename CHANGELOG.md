@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+### Added
+- 29 tools in `src/mcp/tools/extended.ts` / `illustrator-scripts/extended.jsx`, verified live against Illustrator (`pnpm test:e2e:extended`):
+  - Path & object: `offset_path`, `outline_stroke`, `expand_objects`, `create_blend`, `release_blend`, `release_clipping_mask`, `release_compound_path`.
+  - Styles & swatches: `create_text_style`, `apply_text_style`, `list_styles`, `apply_graphic_style`, `apply_brush`, `create_spot_color`, `create_swatch_group`, `list_swatches`, `place_symbol`.
+  - Text layout: `create_area_text`, `thread_text_frames`, `set_text_columns`, `set_text_attributes` (tracking, kerning, baseline, scale, caps, OpenType, indents, tab stops), `find_replace_text`.
+  - Automation: `run_action` and `print_document` (both require `confirm: true`), `fit_artboard_to_artwork`, `export_artboards`, `data_merge_export`, `bind_variable`, `list_variables`, `capture_dataset`, `apply_dataset`.
+- Core e2e suite now exercises `edit_path_points` instead of marking anchor editing NOT TESTED.
+
+- One-line installers for Windows (`irm …/install.ps1 | iex`) and macOS (`curl …/install.sh | bash`) in `installers/`: download the latest release (checksum-verified), keep `.env`/`output`/`logs` on upgrade, register with every MCP client found (Claude Desktop incl. the Microsoft Store build, Claude Code, Cursor, Windsurf, VS Code/Insiders, Cline, Roo Code, Gemini CLI, Codex), merging existing configs with a `.illustrator-mcp.bak` backup and writing JSON without a BOM, and build from source for releases without a prebuilt package.
+- Release automation: `release.yml` (manual: bump version, date changelog, verify, tag, GitHub Release) and `cd.yml` (on tags: build, test-install and attach `illustrator-mcp-X.Y.Z.zip` + `.sha256`).
+- Docs site (`site/`, Astro) rendering `docs/*.md`, published to GitHub Pages by `pages.yml`; also serves the installers.
+- `installer.yml` CI: installs the package on clean Windows and macOS runners and checks upgrades and Claude config merging.
+- `docs/CONFIGURATION.md`, `tests/security/` (sandbox, script injection, allowlist, confirmation gates, auth), `.gitattributes`, Documentation issue template and Show-and-tell discussion template.
+- `node dist/index.js --version`.
+- Docker for the docs site: `site/Dockerfile` (nginx, healthcheck, installers as plain text, 404 page), `site/Dockerfile.dev` + `docker-compose.dev.yml` (hot reload, including `docs/`), `docker-compose.yml` (`SITE_PORT`), root `.dockerignore`, and the `docker.yml` workflow that builds and checks both images.
+
+### Fixed
+- The `.env` file (created by the installers from `.env.example`) was never read; it is now loaded at startup, without overriding the MCP client's `env` settings.
+- The server reported version 0.1.0 to clients; it now reports the `package.json` version.
+- `inspect_document` / object info no longer fails on empty text frames.
+- SVG export of a single artboard finds Illustrator's renamed output file (`-01` suffix).
+
+### Notes
+- `outline_stroke` is built on Offset Path because the Outline Stroke menu command can block Illustrator's scripting engine.
+- Warp effects and printer enumeration are not exposed: `Adobe Deform` has no effect when applied by script, and `app.printerList` can hang Illustrator.
+
 ## 1.0.0 — 2026-11-11
 
 First stable major release. Same feature set as 0.2.0: cross-platform Windows/macOS Illustrator bridge, advanced vector/typography/design-system tools, and Figma-AI-style UI design.
