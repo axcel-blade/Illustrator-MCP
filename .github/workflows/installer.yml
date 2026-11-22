@@ -1,0 +1,115 @@
+name: Installer
+
+# Builds the release package, installs it with the one-line installers on clean Windows and
+# macOS runners (no Illustrator there: the smoke test uses the mock adapter), checks upgrades
+# keep user settings, and that the Claude Desktop config is merged, not replaced.
+
+on:
+  pull_request:
+    paths:
+      - "installers/**"
+      - "scripts/pack-release.mjs"
+      - "scripts/smoke-install.mjs"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/installer.yml"
+  push:
+    branches: [main, develop]
+    paths:
+      - "installers/**"
+      - "scripts/pack-release.mjs"
+      - "scripts/smoke-install.mjs"
+      - ".github/workflows/installer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node scripts/pack-release.mjs
+
+      - name: PowerShell syntax
+        shell: pwsh
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD\installers\windows\install.ps1", [ref]$null, [ref]$errors) | Out-Null
+          if ($errors) { $errors | ForEach-Object { Write-Host $_.Message }; exit 1 }
+
+      - name: Install (Windows PowerShell 5.1, fresh)
+        shell: powershell
+        run: |
+          $zip = (Get-ChildItem release\illustrator-mcp-*.zip).FullName
+          $dir = Join-Path $env:RUNNER_TEMP 'imcp'
+          $cfgDir = Join-Path $env:APPDATA 'Claude'
+          New-Item -ItemType Directory -Force $cfgDir | Out-Null
+          '{"mcpServers":{"other":{"command":"x"}},"theme":"dark"}' | Set-Content (Join-Path $cfgDir 'claude_desktop_config.json')
+          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -ConfigureClaude
+          node (Join-Path $dir 'scripts\smoke-install.mjs')
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          $cfg = Get-Content (Join-Path $cfgDir 'claude_desktop_config.json') -Raw | ConvertFrom-Json
+          if (-not $cfg.mcpServers.other -or -not $cfg.mcpServers.illustrator -or $cfg.theme -ne 'dark') { Write-Error 'Claude config was not merged'; exit 1 }
+
+      - name: Upgrade keeps .env
+        shell: powershell
+        run: |
+          $zip = (Get-ChildItem release\illustrator-mcp-*.zip).FullName
+          $dir = Join-Path $env:RUNNER_TEMP 'imcp'
+          'LOG_LEVEL=warn # user setting' | Set-Content (Join-Path $dir '.env')
+          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -NoClaude
+          if ((Get-Content (Join-Path $dir '.env') -Raw) -notmatch 'user setting') { Write-Error '.env was overwritten'; exit 1 }
+          node (Join-Path $dir 'scripts\smoke-install.mjs')
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+  macos:
+    name: macOS installer
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node scripts/pack-release.mjs
+
+      - name: Shell syntax
+        run: bash -n installers/macos/install.sh
+
+      - name: Install (fresh) and merge Claude config
+        run: |
+          ZIP="$(ls release/illustrator-mcp-*.zip)"
+          DIR="$RUNNER_TEMP/imcp"
+          CFG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+          mkdir -p "$(dirname "$CFG")"
+          echo '{"mcpServers":{"other":{"command":"x"}},"theme":"dark"}' > "$CFG"
+          bash installers/macos/install.sh --archive "$ZIP" --dir "$DIR"
+          node "$DIR/scripts/smoke-install.mjs"
+          node -e 'const c = require(process.argv[1]); if (!c.mcpServers.other || !c.mcpServers.illustrator || c.theme !== "dark") process.exit(1)' "$CFG"
+          test -f "$CFG.bak"
+
+      - name: Upgrade keeps .env
+        run: |
+          ZIP="$(ls release/illustrator-mcp-*.zip)"
+          DIR="$RUNNER_TEMP/imcp"
+          echo 'LOG_LEVEL=warn # user setting' > "$DIR/.env"
+          bash installers/macos/install.sh --archive "$ZIP" --dir "$DIR" --no-claude
+          grep -q 'user setting' "$DIR/.env"
+          node "$DIR/scripts/smoke-install.mjs"

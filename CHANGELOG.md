@@ -10,7 +10,16 @@
   - Automation: `run_action` and `print_document` (both require `confirm: true`), `fit_artboard_to_artwork`, `export_artboards`, `data_merge_export`, `bind_variable`, `list_variables`, `capture_dataset`, `apply_dataset`.
 - Core e2e suite now exercises `edit_path_points` instead of marking anchor editing NOT TESTED.
 
+- One-line installers for Windows (`irm …/install.ps1 | iex`) and macOS (`curl …/install.sh | bash`) in `installers/`: download the latest release (checksum-verified), keep `.env`/`output`/`logs` on upgrade, merge into the Claude Desktop config with a backup, and build from source for releases without a prebuilt package.
+- Release automation: `release.yml` (manual: bump version, date changelog, verify, tag, GitHub Release) and `cd.yml` (on tags: build, test-install and attach `illustrator-mcp-X.Y.Z.zip` + `.sha256`).
+- Docs site (`site/`, Astro) rendering `docs/*.md`, published to GitHub Pages by `pages.yml`; also serves the installers.
+- `installer.yml` CI: installs the package on clean Windows and macOS runners and checks upgrades and Claude config merging.
+- `docs/CONFIGURATION.md`, `tests/security/` (sandbox, script injection, allowlist, confirmation gates, auth), `.gitattributes`, Documentation issue template and Show-and-tell discussion template.
+- `node dist/index.js --version`.
+
 ### Fixed
+- The `.env` file (created by the installers from `.env.example`) was never read; it is now loaded at startup, without overriding the MCP client's `env` settings.
+- The server reported version 0.1.0 to clients; it now reports the `package.json` version.
 - `inspect_document` / object info no longer fails on empty text frames.
 - SVG export of a single artboard finds Illustrator's renamed output file (`-01` suffix).
 

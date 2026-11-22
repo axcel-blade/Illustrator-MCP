@@ -1,0 +1,70 @@
+# Configuration
+
+Illustrator MCP is configured with environment variables. They can come from three places;
+earlier ones win:
+
+1. **Command line** — `--transport stdio|http` overrides `MCP_TRANSPORT`.
+2. **The MCP client's `env` block** (Claude Desktop `claude_desktop_config.json`, ChatGPT connector host, shell).
+3. **A `.env` file** in the install folder (copy [`.env.example`](../.env.example)), or the file named by
+   `ILLUSTRATOR_MCP_ENV_FILE`. Requires Node.js 20.12+; values already set by 1–2 are never overridden.
+
+Run `node dist/index.js --version` to print the installed version.
+
+## Settings
+
+| Variable | Default | Values | Purpose |
+|---|---|---|---|
+| `MCP_TRANSPORT` | `stdio` | `stdio`, `http` | `stdio` for Claude Desktop; `http` (Streamable HTTP) for ChatGPT and remote clients |
+| `MCP_HTTP_HOST` | `127.0.0.1` | host/IP | Bind address for `http`. Non-loopback hosts **require** `MCP_AUTH_TOKEN` or `MCP_SECRET_PATH` |
+| `MCP_HTTP_PORT` | `3333` | 1–65535 | Port for `http` |
+| `MCP_AUTH_TOKEN` | — | ≥ 24 chars | Bearer token required on every HTTP request. Generate with `scripts/new-token.ps1` or `openssl rand -hex 24` |
+| `MCP_SECRET_PATH` | — | ≥ 24 chars | Secret URL path segment for clients that cannot send headers (ChatGPT "No authentication") |
+| `ILLUSTRATOR_ADAPTER` | `auto` | `auto`, `com`, `applescript`, `mock` | Bridge to Illustrator. `auto` = COM on Windows, AppleScript on macOS. `mock` is for tests only and labels every result as simulated |
+| `ILLUSTRATOR_TIMEOUT_MS` | `60000` | 1000–600000 | Per-operation timeout. Raise it for very large documents or exports |
+| `ILLUSTRATOR_AUTO_LAUNCH` | `true` | `true`, `false` | Start Illustrator when it is not running. `false` returns `ILLUSTRATOR_NOT_RUNNING` instead |
+| `ALLOWED_PATHS` | `./output;~/Documents/IllustratorMCP` | `;`-separated dirs | The only directories tools may open, place, save or export to. Everything else is rejected with `PATH_NOT_ALLOWED` |
+| `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` | Log verbosity |
+| `LOG_DIR` | `logs` | path | Log folder, relative to the install folder |
+| `ILLUSTRATOR_MCP_ENV_FILE` | `<install>/.env` | path | Alternative settings file (set it in the client's `env` block) |
+
+## Examples
+
+### Claude Desktop (Windows)
+
+`%APPDATA%\Claude\claude_desktop_config.json` — see also [`examples/claude_desktop_config.json`](../examples/claude_desktop_config.json):
+
+```json
+{
+  "mcpServers": {
+    "illustrator": {
+      "command": "node",
+      "args": ["C:\Users\you\AppData\Local\IllustratorMCP\dist\index.js"],
+      "env": { "ILLUSTRATOR_ADAPTER": "com", "ALLOWED_PATHS": "C:\Users\you\Documents\IllustratorMCP" }
+    }
+  }
+}
+```
+
+### Claude Desktop (macOS)
+
+`~/Library/Application Support/Claude/claude_desktop_config.json` — see [`examples/claude_desktop_config.macos.json`](../examples/claude_desktop_config.macos.json).
+
+### Remote HTTP (ChatGPT)
+
+```env
+MCP_TRANSPORT=http
+MCP_HTTP_HOST=0.0.0.0
+MCP_HTTP_PORT=3333
+MCP_AUTH_TOKEN=<48 hex chars>
+```
+
+Put it behind an HTTPS tunnel or reverse proxy; see [INSTALLATION.md](INSTALLATION.md) §5 and [SECURITY.md](SECURITY.md).
+
+## Install locations used by the one-line installers
+
+| OS | Folder | Claude config |
+|---|---|---|
+| Windows | `%LOCALAPPDATA%\IllustratorMCP` | `%APPDATA%\Claude\claude_desktop_config.json` |
+| macOS | `~/Library/Application Support/IllustratorMCP` | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+
+Both create `~/Documents/IllustratorMCP` as the default output folder.

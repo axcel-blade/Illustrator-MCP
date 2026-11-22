@@ -23,7 +23,11 @@ src/
   schemas/                    design plan schema
   utils/                      units, colors, paths, errors, logger
 illustrator-scripts/          ExtendScript ops + run-jsx.ps1
-tests/unit, tests/integration
+installers/windows|macos/     one-line installers (served by the docs site)
+site/                         Astro docs site; renders docs/*.md, deployed to GitHub Pages
+scripts/pack-release.mjs      builds the release zip; scripts/smoke-install.mjs checks an install
+tests/unit, tests/security    vitest (mock adapter); tests/e2e, tests/integration need Illustrator
+.github/workflows/            ci, installer, release (manual), cd (on tags), pages
 ```
 
 ## Adding an Illustrator operation
