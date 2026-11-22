@@ -85,7 +85,14 @@ await step(T, "alignment", "set_paragraph_alignment", { target: { name: "Title" 
 await step(V, "create pen path", "draw_pen_path", { name: "Path", points: [{ x: 30, y: 400 }, { x: 130, y: 360, in: [100, 340], out: [160, 380] }, { x: 230, y: 420 }], closed: false, stroke: { color: "#000000", width: 2 }, fill: "none" },
   (x) => (x.pointCount === 3 ? true : x));
 await step(V, "freeform path", "draw_freeform_path", { name: "Free", points: [{ x: 260, y: 400 }, { x: 300, y: 360 }, { x: 340, y: 420 }, { x: 380, y: 380 }], fill: "none", stroke: { color: "#0000FF", width: 2 } }, (x) => (x.pointCount === 4 ? true : x));
-rec(V, "modify anchor points of existing path", "NOT TESTED", "No MCP tool exposes per-anchor editing; paths can only be redrawn (draw_pen_path) or transformed.");
+await step(V, "modify anchor points: move anchor", "edit_path_points", { target: { name: "Path" }, action: "move", index: 2, x: 240, y: 440 },
+  (d) => (near(d.points[2].x, 240) && near(d.points[2].y, 440) ? true : d.points[2]));
+await step(V, "modify anchor points: set handles", "edit_path_points", { target: { name: "Path" }, action: "set_handles", index: 1, in: [90, 340], out: [170, 380], pointType: "smooth" },
+  (d) => (d.points[1].type === "smooth" && near(d.points[1].in[0], 90) && near(d.points[1].out[0], 170) ? true : d.points[1]));
+await step(V, "modify anchor points: add + remove", "edit_path_points", { target: { name: "Path" }, action: "add", index: 0 },
+  (d) => (d.points.length === 4 ? true : d.points));
+await step(V, "modify anchor points: verify on canvas", "edit_path_points", { target: { name: "Path" }, action: "remove", index: 1 },
+  async (d) => { const i = await item("Path"); return d.points.length === 3 && (i?.pointCount ?? 3) === 3 ? true : { d, i }; });
 await step(V, "rotate (transform)", "rotate_object", { target: { name: "Ellipse" }, angle: 90 }, async () => { const b = (await item("Ellipse")).bounds; return near(b.width, 70, 1) && near(b.height, 140, 1) ? true : b; });
 await step(V, "scale + reflect (transform_objects)", "transform_objects", { target: { name: "Hex" }, scale: 150, reflect: "horizontal" }, async () => { const b = (await item("Hex")).bounds; return b.width > 100 ? true : b; });
 await step(V, "group", "group_objects", { targets: [{ name: "Path" }, { name: "Free" }], name: "Paths" }, async () => ((await item("Paths"))?.type === "GroupItem" ? true : "group not found"));
