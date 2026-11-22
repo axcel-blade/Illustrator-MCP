@@ -99,6 +99,8 @@ jobs:
         env:
           ILLUSTRATOR_MCP_DIR: ${{ runner.temp }}\imcp-latest
           ILLUSTRATOR_MCP_CONFIGURE_CLIENTS: "0"
+          # Shared runner IPs exhaust GitHub's anonymous API limit; authenticate the release lookup.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           Get-Content installers\windows\install.ps1 -Raw | Invoke-Expression
           node (Join-Path $env:ILLUSTRATOR_MCP_DIR 'scripts\smoke-install.mjs')
@@ -155,6 +157,8 @@ jobs:
           node "$DIR/scripts/smoke-install.mjs"
 
       - name: Install the latest published release (download + checksum)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0 bash installers/macos/install.sh --dir "$RUNNER_TEMP/imcp-latest"
           node "$RUNNER_TEMP/imcp-latest/scripts/smoke-install.mjs"
