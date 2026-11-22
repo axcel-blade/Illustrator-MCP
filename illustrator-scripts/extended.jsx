@@ -1,5 +1,5 @@
 /*
- * Extended operations: path/object commands (offset, outline stroke, expand, blends, warp,
+ * Extended operations: path/object commands (offset, outline stroke, expand, blends,
  * releases), styles & swatches (character/paragraph/graphic styles, spot colors, swatch
  * groups, brushes, symbol instances), text layout (area text, threading, columns, character
  * and paragraph attributes, find & replace) and automation (actions, fit artboard, variables,
@@ -62,12 +62,48 @@ MCP.ops.offset_path = function (a) {
   return MCP.resultOf(made, a.name);
 };
 
+/* Outline Stroke without the menu command (it can block Illustrator): an Offset Path of half
+   the stroke width around an open path is exactly its stroke outline; for a closed path the
+   ring between the +w/2 and -w/2 offsets is. */
+MCP.offsetCopy = function (src, dist, join) {
+  var c = src.duplicate(src, ElementPlacement.PLACEBEFORE);
+  c.stroked = false; c.filled = false;
+  c.applyEffect('<LiveEffect name="Adobe Offset Path"><Dict data="R mlim ' + (src.strokeMiterLimit || 4) + " R ofst " + dist + " I jntp " + join + ' "/></LiveEffect>');
+  var r = MCP.runOnSelection([c], ["expandStyle"]);
+  if (r.length !== 1) MCP.fail("ILLUSTRATOR_SCRIPT_ERROR", "Offset produced " + r.length + " objects.");
+  return r[0];
+};
+
 MCP.ops.outline_stroke = function (a) {
-  var items = MCP.targets(a);
+  var items = MCP.targets(a), made = [];
   for (var i = 0; i < items.length; i++) {
-    if (items[i].typename === "PathItem" && !items[i].stroked) MCP.fail("VALIDATION_ERROR", "Object has no stroke: " + (items[i].name || items[i].typename));
+    var p = items[i];
+    if (p.typename !== "PathItem" || !p.stroked || p.strokeWidth <= 0) MCP.fail("VALIDATION_ERROR", "Object has no stroke: " + (p.name || p.typename));
+    var w = p.strokeWidth, col = p.strokeColor;
+    var join = p.strokeJoin === StrokeJoin.ROUNDENDJOIN ? 0 : p.strokeJoin === StrokeJoin.BEVELENDJOIN ? 2 : 4;
+    var res;
+    if (!p.closed) res = MCP.offsetCopy(p, w / 2, join);
+    else {
+      var outer = MCP.offsetCopy(p, w / 2, join), inner = MCP.offsetCopy(p, -w / 2, join);
+      /* Compound path with even-odd fill: the inner offset becomes the hole. */
+      var cp = MCP.layerOf(p).compoundPathItems.add();
+      cp.move(p, ElementPlacement.PLACEBEFORE);
+      outer.move(cp, ElementPlacement.PLACEATEND); inner.move(cp, ElementPlacement.PLACEATBEGINNING);
+      for (var k = 0; k < cp.pathItems.length; k++) cp.pathItems[k].evenodd = true;
+      res = cp;
+    }
+    MCP.paintFill(res, col);
+    /* Like Illustrator: a filled original keeps its fill as a separate shape; otherwise it is replaced. */
+    if (p.filled) p.stroked = false; else p.remove();
+    made.push(res);
   }
-  return MCP.resultOf(MCP.runOnSelection(items, ["OffsetPath v23"]), a.name);
+  return MCP.resultOf(made, a.name);
+};
+
+MCP.paintFill = function (item, col) {
+  if (item.typename === "CompoundPathItem") { for (var i = 0; i < item.pathItems.length; i++) MCP.paintFill(item.pathItems[i], col); return; }
+  if (item.typename === "GroupItem") { for (var j = 0; j < item.pageItems.length; j++) MCP.paintFill(item.pageItems[j], col); return; }
+  item.filled = true; item.fillColor = col; item.stroked = false;
 };
 
 MCP.ops.expand_objects = function (a) {
@@ -89,20 +125,6 @@ MCP.ops.create_blend = function (a) {
 
 MCP.ops.release_blend = function (a) {
   return MCP.resultOf(MCP.runOnSelection(MCP.targets(a), ["Path Blend Release"]));
-};
-
-MCP.WARPS = { arc: 1, arcLower: 2, arcUpper: 3, arch: 4, bulge: 5, shellLower: 6, shellUpper: 7, flag: 8, wave: 9,
-  fish: 10, rise: 11, fisheye: 12, inflate: 13, squeeze: 14, twist: 15 };
-
-MCP.ops.warp_objects = function (a) {
-  var items = MCP.targets(a);
-  var style = MCP.WARPS[a.style];
-  if (!style) MCP.fail("VALIDATION_ERROR", "Unknown warp style " + a.style);
-  var xml = '<LiveEffect name="Adobe Deform"><Dict data="R DeformValue ' + (a.bend / 100) + " R DeformVertical " + ((a.distortVertical || 0) / 100) +
-    " R DeformHorizontal " + ((a.distortHorizontal || 0) / 100) + " I DeformStyle " + style + " B Rotate " + (a.vertical ? 1 : 0) + ' "/></LiveEffect>';
-  for (var i = 0; i < items.length; i++) items[i].applyEffect(xml);
-  if (a.expand) return MCP.resultOf(MCP.runOnSelection(items, ["expandStyle"]), a.name);
-  return MCP.infos(items);
 };
 
 MCP.ops.release_clipping_mask = function (a) {

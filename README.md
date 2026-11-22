@@ -14,7 +14,7 @@ the result, exports previews and applies targeted revisions.
 AI client (Claude Desktop: stdio · ChatGPT: HTTPS)
         │  MCP
         ▼
-MCP server ── 148 tools, resources, prompts, validation, auth
+MCP server ── 178 tools, resources, prompts, validation, auth
         │
         ▼
 AI design engine ── brief analysis → plan JSON → validation → compile; critique, revision, variations
@@ -31,7 +31,7 @@ Adobe Illustrator ── ExtendScript ops (illustrator-scripts/*.jsx)
 
 | Area | State |
 |---|---|
-| MCP server (stdio + Streamable HTTP), 148 tools, resources, prompts | Implemented, covered by automated tests |
+| MCP server (stdio + Streamable HTTP), 178 tools, resources, prompts | Implemented, covered by automated tests |
 | Design engine (planner, 26 templates incl. UI screens, 15 styles, auto layout, UI components, design tokens, UI/UX Pro Max design knowledge, validator, compiler, analyzer, revisions, variations) | Implemented, covered by automated tests |
 | Bridge (queue, timeouts, allowlist, error mapping, COM + AppleScript runners, document pinning) | Implemented; Windows COM verified with Illustrator; macOS AppleScript adapter added |
 | ExtendScript operations inside a real Illustrator | Verified against Illustrator 2026 (30.8) on Windows with `pnpm test:e2e`, `test:e2e:design` and `test:e2e:advanced` (44/44); see [docs/TEST_REPORT.md](docs/TEST_REPORT.md) |
@@ -81,7 +81,7 @@ minimalist layout, beige background, elegant typography and a product image."*
 | `pnpm test` | Automated tests (mock adapter, no Illustrator needed) |
 | `pnpm test:integration` | Manual tests against the real Illustrator |
 | `pnpm test:e2e` | Full end-to-end suite against the real Illustrator (closes all open documents without saving) |
-| `pnpm test:e2e:design` / `test:e2e:advanced` | Design build + exports / advanced tools (pathfinder, paths, images, artboards, typography, design systems); use only their own document |
+| `pnpm test:e2e:design` / `test:e2e:advanced` / `test:e2e:extended` | Design build + exports / advanced tools (pathfinder, paths, images, artboards, typography, design systems) / extended tools (offset, outline stroke, blends, styles, swatches, symbols, area text, data merge, batch export); use only their own document |
 | `pnpm test:e2e:http` / `test:e2e:reconnect` | HTTP transport / Illustrator quit-and-relaunch |
 | `pnpm lint` / `pnpm typecheck` | Static checks |
 

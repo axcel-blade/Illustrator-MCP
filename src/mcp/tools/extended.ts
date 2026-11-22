@@ -100,23 +100,6 @@ export function registerExtendedTools(server: McpServer, ctx: ToolContext): void
   });
 
   defineTool(server, ctx, {
-    name: "warp_objects",
-    description: "Apply an Effect > Warp style (arc, arch, bulge, flag, wave, fish, rise, fisheye, inflate, squeeze, twist, ...) as a live effect; expand: true bakes it into paths.",
-    input: {
-      targets: targetsArg,
-      style: z.enum(["arc", "arcLower", "arcUpper", "arch", "bulge", "shellLower", "shellUpper", "flag", "wave", "fish", "rise", "fisheye", "inflate", "squeeze", "twist"]),
-      bend: z.number().min(-100).max(100).default(50).describe("Percent"),
-      distortHorizontal: z.number().min(-100).max(100).default(0),
-      distortVertical: z.number().min(-100).max(100).default(0),
-      vertical: z.boolean().default(false),
-      expand: z.boolean().default(false),
-      name: nameArg,
-    },
-    annotations: WRITE,
-    handler: async (a) => op(ctx, "warp_objects", a),
-  });
-
-  defineTool(server, ctx, {
     name: "release_clipping_mask",
     description: "Release a clipping group: the mask path and contents become ordinary objects again.",
     input: { targets: targetsArg },

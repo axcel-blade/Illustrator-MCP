@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+### Added
+- 29 tools in `src/mcp/tools/extended.ts` / `illustrator-scripts/extended.jsx`, verified live against Illustrator (`pnpm test:e2e:extended`):
+  - Path & object: `offset_path`, `outline_stroke`, `expand_objects`, `create_blend`, `release_blend`, `release_clipping_mask`, `release_compound_path`.
+  - Styles & swatches: `create_text_style`, `apply_text_style`, `list_styles`, `apply_graphic_style`, `apply_brush`, `create_spot_color`, `create_swatch_group`, `list_swatches`, `place_symbol`.
+  - Text layout: `create_area_text`, `thread_text_frames`, `set_text_columns`, `set_text_attributes` (tracking, kerning, baseline, scale, caps, OpenType, indents, tab stops), `find_replace_text`.
+  - Automation: `run_action` and `print_document` (both require `confirm: true`), `fit_artboard_to_artwork`, `export_artboards`, `data_merge_export`, `bind_variable`, `list_variables`, `capture_dataset`, `apply_dataset`.
+- Core e2e suite now exercises `edit_path_points` instead of marking anchor editing NOT TESTED.
+
+### Fixed
+- `inspect_document` / object info no longer fails on empty text frames.
+- SVG export of a single artboard finds Illustrator's renamed output file (`-01` suffix).
+
+### Notes
+- `outline_stroke` is built on Offset Path because the Outline Stroke menu command can block Illustrator's scripting engine.
+- Warp effects and printer enumeration are not exposed: `Adobe Deform` has no effect when applied by script, and `app.printerList` can hang Illustrator.
+
 ## 1.0.0 — 2026-11-11
 
 First stable major release. Same feature set as 0.2.0: cross-platform Windows/macOS Illustrator bridge, advanced vector/typography/design-system tools, and Figma-AI-style UI design.

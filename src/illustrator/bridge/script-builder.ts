@@ -26,7 +26,7 @@ export const ALLOWED_OPS = new Set([
   "pathfinder", "flip_objects", "edit_path_points", "reverse_path", "set_path_closed", "split_path", "join_paths", "simplify_path",
   "get_image_info", "replace_image", "trace_image", "rename_artboard", "delete_artboard", "duplicate_artboard",
   "list_documents", "activate_document", "undo", "redo", "analyze_typography", "apply_typography_roles",
-  "offset_path", "outline_stroke", "expand_objects", "create_blend", "release_blend", "warp_objects", "release_clipping_mask", "release_compound_path",
+  "offset_path", "outline_stroke", "expand_objects", "create_blend", "release_blend", "release_clipping_mask", "release_compound_path",
   "create_text_style", "apply_text_style", "list_styles", "apply_graphic_style", "apply_brush", "create_spot_color", "create_swatch_group", "list_swatches", "place_symbol",
   "create_area_text", "thread_text_frames", "set_text_columns", "set_text_attributes", "find_replace_text",
   "run_action", "fit_artboard_to_artwork", "bind_variable", "list_variables", "capture_dataset", "apply_dataset", "print_document",

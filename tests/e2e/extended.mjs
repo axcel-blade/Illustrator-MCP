@@ -42,6 +42,10 @@ await step("offset path +10 keeps original", "offset_path", { targets: [{ name: 
 await step("offset path inward -10", "offset_path", { targets: [{ name: "Sq" }], offset: -10, name: "SqIn" }, (d) => near(d.items[0].bounds.width, 80, 1.5) || d.items[0].bounds);
 
 await must("draw_line", { x1: 200, y1: 100, x2: 400, y2: 100, name: "Ln", stroke: { color: "#000000", width: 10 } });
+await must("draw_rectangle", { x: 200, y: 140, width: 100, height: 40, name: "Ring", fill: "none", stroke: { color: "#00AA00", width: 8 } });
+await step("outline stroke closed path -> ring", "outline_stroke", { targets: [{ name: "Ring" }], name: "RingOut" }, (d) => {
+  const o = d.items[0]; return near(o.bounds.width, 108, 1) && near(o.bounds.height, 48, 1) && !o.stroke || o;
+});
 await step("outline stroke -> filled path", "outline_stroke", { targets: [{ name: "Ln" }], name: "LnOut" }, (d) => {
   const o = d.items[0]; return o.fill && !o.stroke && near(o.bounds.height, 10, 1) && near(o.bounds.width, 200, 1) || o;
 });
@@ -59,9 +63,6 @@ await must("draw_circle", { cx: 80, cy: 420, radius: 20, name: "C1", fill: "#00A
 await must("draw_circle", { cx: 300, cy: 420, radius: 20, name: "C2", fill: "#AA00AA" });
 await step("create blend + expand -> paths", "create_blend", { targets: [{ name: "C1" }, { name: "C2" }], expand: true, name: "BlendX" }, (d) => d.items[0].type === "GroupItem" && d.items[0].childCount > 2 || d.items[0]);
 
-await must("draw_rectangle", { x: 450, y: 200, width: 200, height: 60, name: "Flag", fill: "#FF8800" });
-await step("warp (arc) live", "warp_objects", { targets: [{ name: "Flag" }], style: "arc", bend: 50 }, (d) => d.count === 1 || d);
-await step("warp expand changes height", "expand_objects", { targets: [{ name: "Flag" }], mode: "appearance", name: "FlagX" }, (d) => d.items[0].bounds.height > 70 || d.items[0].bounds);
 
 await must("draw_rectangle", { x: 450, y: 350, width: 80, height: 80, name: "MaskShape" });
 await must("draw_rectangle", { x: 430, y: 330, width: 140, height: 140, name: "MaskBody", fill: "#00FFAA" });
