@@ -1,6 +1,10 @@
-# Illustrator AI Design MCP
+# Illustrator MCP
 
 [![CI](https://github.com/axcel-blade/Illustrator-MCP-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/axcel-blade/Illustrator-MCP-Server/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/axcel-blade/Illustrator-MCP-Server?sort=semver)](https://github.com/axcel-blade/Illustrator-MCP-Server/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/axcel-blade/Illustrator-MCP-Server)](LICENSE)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
+[![MCP](https://img.shields.io/badge/MCP-server-6E56CF)](https://modelcontextprotocol.io)
 
 An MCP server that lets AI assistants (Claude Desktop, ChatGPT) design in **Adobe Illustrator**: it turns
 natural-language briefs — posters, logos, brand work and, Figma-AI-style, app screens, landing pages, dashboards and UI kits — into structured design plans, builds them as **editable vector artwork**, inspects

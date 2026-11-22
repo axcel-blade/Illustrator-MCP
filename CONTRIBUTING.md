@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Illustrator AI Design MCP.
+Thanks for helping improve Illustrator MCP.
 
 ## Ground rules
 
