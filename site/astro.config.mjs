@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "astro/config";
 
 // GitHub Pages defaults; override with ASTRO_SITE / ASTRO_BASE (e.g. a custom domain).
@@ -31,7 +32,20 @@ export default defineConfig({
     shikiConfig: { themes: { light: "github-light", dark: "github-dark" } },
   },
   vite: {
+    plugins: [
+      {
+        // docs/ is outside the site root, so the dev watcher does not see edits there by default.
+        name: "watch-repo-docs",
+        configureServer(server) {
+          server.watcher.add(fileURLToPath(new URL("../docs", import.meta.url)));
+        },
+      },
+    ],
     // docs/*.md and package.json live one level above the site.
-    server: { fs: { allow: [".."] } },
+    server: {
+      fs: { allow: [".."] },
+      // Docker Desktop bind mounts do not forward file events; poll when asked (docker-compose.dev.yml).
+      watch: process.env.CHOKIDAR_USEPOLLING === "true" ? { usePolling: true, interval: 300 } : undefined,
+    },
   },
 });

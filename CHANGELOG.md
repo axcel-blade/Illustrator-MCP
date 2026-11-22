@@ -16,6 +16,7 @@
 - `installer.yml` CI: installs the package on clean Windows and macOS runners and checks upgrades and Claude config merging.
 - `docs/CONFIGURATION.md`, `tests/security/` (sandbox, script injection, allowlist, confirmation gates, auth), `.gitattributes`, Documentation issue template and Show-and-tell discussion template.
 - `node dist/index.js --version`.
+- Docker for the docs site: `site/Dockerfile` (nginx, healthcheck, installers as plain text, 404 page), `site/Dockerfile.dev` + `docker-compose.dev.yml` (hot reload, including `docs/`), `docker-compose.yml` (`SITE_PORT`), root `.dockerignore`, and the `docker.yml` workflow that builds and checks both images.
 
 ### Fixed
 - The `.env` file (created by the installers from `.env.example`) was never read; it is now loaded at startup, without overriding the MCP client's `env` settings.

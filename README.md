@@ -103,6 +103,7 @@ minimalist layout, beige background, elegant typography and a product image."*
 | `pnpm lint` / `pnpm typecheck` | Static checks |
 | `node scripts/pack-release.mjs` | Build the release package (`release/illustrator-mcp-X.Y.Z.zip`) the installers download |
 | `pnpm --dir site dev` | Run the docs site locally (renders `docs/*.md`) |
+| `docker compose -f site/docker-compose.yml up --build -d` | Docs site in Docker (nginx) at http://localhost:8080 (`SITE_PORT` to change); `docker-compose.dev.yml` for hot reload on :4321 |
 
 ## Documentation
 
