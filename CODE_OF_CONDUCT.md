@@ -28,7 +28,7 @@ Applies in all project spaces (issues, pull requests, discussions) and when repr
 ## Enforcement
 
 Report problems to the maintainers privately via a
-[GitHub security advisory](https://github.com/axcel-blade/Illustrator-MCP-Server/security/advisories/new) marked
+[GitHub security advisory](https://github.com/axcel-blade/Illustrator-MCP/security/advisories/new) marked
 "Code of Conduct", or by contacting a maintainer directly. Reports are handled confidentially.
 
 Maintainers may remove, edit or reject contributions, and may warn, temporarily ban or permanently ban participants

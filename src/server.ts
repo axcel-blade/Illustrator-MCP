@@ -1,6 +1,7 @@
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { AppConfig } from "./config/index.js";
+import { PROJECT_ROOT, type AppConfig } from "./config/index.js";
 import { PlanStore } from "./design-engine/plan-store.js";
 import { AppleScriptAdapter } from "./illustrator/bridge/applescript-adapter.js";
 import { IllustratorBridge } from "./illustrator/bridge/bridge.js";
@@ -14,6 +15,7 @@ import { registerAppearanceTools } from "./mcp/tools/appearance.js";
 import { registerAssetTools } from "./mcp/tools/assets.js";
 import type { ToolContext } from "./mcp/tools/common.js";
 import { registerDesignTools } from "./mcp/tools/design.js";
+import { registerExtendedTools } from "./mcp/tools/extended.js";
 import { registerDocumentTools } from "./mcp/tools/document.js";
 import { registerExportTools } from "./mcp/tools/export.js";
 import { registerLayerTools } from "./mcp/tools/layers.js";
@@ -24,7 +26,9 @@ import { registerUiTools } from "./mcp/tools/ui.js";
 import { registerVectorTools } from "./mcp/tools/vector.js";
 import { PathPolicy } from "./utils/paths.js";
 
-export const SERVER_INFO = { name: "illustrator-ai-mcp", version: "0.1.0" };
+/** Version comes from package.json so releases only bump one file. */
+const PKG = JSON.parse(readFileSync(join(PROJECT_ROOT, "package.json"), "utf8")) as { name: string; version: string };
+export const SERVER_INFO = { name: PKG.name, version: PKG.version };
 
 /** Pick COM on Windows, AppleScript on macOS; explicit adapter names always win. */
 export function createAdapter(config: AppConfig): BridgeAdapter {
@@ -70,6 +74,7 @@ export function createServer(ctx: ToolContext): McpServer {
   registerDesignTools(server, ctx);
   registerUiTools(server, ctx);
   registerAdvancedTools(server, ctx);
+  registerExtendedTools(server, ctx);
   registerResources(server, ctx);
   registerPrompts(server);
   return server;

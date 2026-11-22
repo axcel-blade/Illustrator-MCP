@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve Illustrator AI Design MCP.
+Thanks for helping improve Illustrator MCP.
 
 ## Ground rules
 
@@ -37,6 +37,18 @@ If you touched `illustrator-scripts/` or the bridge, also run `scripts\integrati
 - Branch from `develop` (`feature/...`, `fix/...`, `docs/...`); PRs target `develop`. `main` holds releases.
 - Keep commits focused; describe *why* in the message.
 - Update `CHANGELOG.md` under an "Unreleased" heading for user-visible changes.
+
+## Releasing (maintainers)
+
+1. Merge `develop` into `main` with everything for the release listed under `## Unreleased` in `CHANGELOG.md`.
+2. Run **Actions → Release → Run workflow** on `main` with the version (e.g. `1.1.0`). Tick *dry run* first to preview.
+   It bumps `package.json`, dates the changelog, runs all checks, commits, tags `vX.Y.Z` and creates the GitHub Release.
+3. **CD** then builds `illustrator-mcp-X.Y.Z.zip` (+ `.sha256`), test-installs it, attaches it to the release and
+   refreshes the docs site. The one-line installers pick it up as the latest release.
+4. Merge `main` back into `develop`.
+
+One-time setup: Settings → Pages → Source = **GitHub Actions**. If `main` is branch-protected, add a `RELEASE_TOKEN`
+secret (fine-grained PAT with *contents* and *actions* write) so the workflow can push the version commit and tag.
 
 ## Reporting bugs and requesting features
 

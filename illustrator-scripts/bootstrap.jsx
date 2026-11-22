@@ -304,13 +304,16 @@ MCP.info = function (item, deep) {
     o.stroke = item.stroked ? { color: MCP.describeColor(item.strokeColor), width: item.strokeWidth } : null;
     o.closed = item.closed; o.pointCount = item.pathPoints.length; o.clipping = item.clipping;
   } else if (item.typename === "TextFrame") {
-    var ca = item.textRange.characterAttributes;
     o.contents = item.contents;
     o.textKind = String(item.kind);
-    try { o.font = ca.textFont.name; o.fontFamily = ca.textFont.family; o.fontStyle = ca.textFont.style; } catch (e5) { o.font = null; }
-    o.fontSize = ca.size; o.tracking = ca.tracking;
-    o.leading = ca.autoLeading ? null : ca.leading;
-    o.fill = MCP.describeColor(ca.fillColor);
+    /* An empty frame has no characters to read attributes from. */
+    if (item.characters.length > 0) {
+      var ca = item.textRange.characterAttributes;
+      try { o.font = ca.textFont.name; o.fontFamily = ca.textFont.family; o.fontStyle = ca.textFont.style; } catch (e5) { o.font = null; }
+      o.fontSize = ca.size; o.tracking = ca.tracking;
+      o.leading = ca.autoLeading ? null : ca.leading;
+      o.fill = MCP.describeColor(ca.fillColor);
+    }
     try { o.justification = String(item.textRange.paragraphAttributes.justification); } catch (e6) { /* n/a */ }
   } else if (item.typename === "PlacedItem") {
     try { o.file = item.file.fsName; o.linkExists = item.file.exists; } catch (e7) { o.file = null; o.linkExists = false; }

@@ -1,13 +1,20 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadConfig } from "./config/index.js";
-import { createContext, createServer } from "./server.js";
+import { loadConfig, loadDotEnv } from "./config/index.js";
+import { createContext, createServer, SERVER_INFO } from "./server.js";
 import { startHttp } from "./transport/http.js";
 import { configureLogger, logger } from "./utils/logger.js";
 
 async function main(): Promise<void> {
+  if (process.argv.includes("--version") || process.argv.includes("-v")) {
+    process.stdout.write(`${SERVER_INFO.name} ${SERVER_INFO.version}
+`);
+    return;
+  }
+  const envFile = loadDotEnv();
   const config = loadConfig();
   configureLogger({ level: config.logLevel, dir: config.logDir });
+  if (envFile) logger.info("loaded settings file", { file: envFile });
   const ctx = createContext(config);
   logger.info("starting illustrator-ai-mcp", { transport: config.transport, adapter: config.illustrator.adapter, allowedPaths: config.allowedPaths });
 
