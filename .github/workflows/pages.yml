@@ -1,7 +1,7 @@
 name: Pages
 
 # Builds the Astro docs site (site/) from docs/*.md and serves the one-line installers at
-# https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 and /install.sh.
+# https://axcel-blade.github.io/Illustrator-MCP/install.ps1 and /install.sh.
 # Requires Settings > Pages > Source = "GitHub Actions".
 
 on:

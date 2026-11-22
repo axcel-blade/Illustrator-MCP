@@ -2,11 +2,11 @@
   "mcpServers": {
     "illustrator": {
       "command": "node",
-      "args": ["/absolute/path/to/Illustrator-MCP-Server/dist/index.js"],
+      "args": ["/absolute/path/to/Illustrator-MCP/dist/index.js"],
       "env": {
         "ILLUSTRATOR_ADAPTER": "auto",
         "ILLUSTRATOR_AUTO_LAUNCH": "true",
-        "ALLOWED_PATHS": "/Users/YOU/Documents/IllustratorMCP;/absolute/path/to/Illustrator-MCP-Server/output",
+        "ALLOWED_PATHS": "/Users/YOU/Documents/IllustratorMCP;/absolute/path/to/Illustrator-MCP/output",
         "LOG_LEVEL": "info"
       }
     }

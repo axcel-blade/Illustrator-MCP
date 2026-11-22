@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-line installer for Illustrator MCP on macOS.
 #
-#   curl -fsSL https://axcel-blade.github.io/Illustrator-MCP-Server/install.sh | bash
+#   curl -fsSL https://axcel-blade.github.io/Illustrator-MCP/install.sh | bash
 #
 # Downloads a release from GitHub into ~/Library/Application Support/IllustratorMCP, installs
 # production dependencies with pnpm and registers it with every MCP client it finds: Claude
@@ -16,7 +16,7 @@
 #   --no-clients        ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0   do not touch any MCP client config
 set -euo pipefail
 
-REPO="axcel-blade/Illustrator-MCP-Server"
+REPO="axcel-blade/Illustrator-MCP"
 VERSION="${ILLUSTRATOR_MCP_VERSION:-}"
 INSTALL_DIR="${ILLUSTRATOR_MCP_DIR:-$HOME/Library/Application Support/IllustratorMCP}"
 ARCHIVE=""
@@ -41,7 +41,7 @@ ok() { printf '\033[32m  ok  %s\033[0m\n' "$*"; }
 die() { printf '\033[31m  !!  %s\033[0m\n' "$*" >&2; exit 1; }
 
 if [[ "$(uname -s)" != "Darwin" && "${ILLUSTRATOR_MCP_ALLOW_ANY_OS:-}" != "1" ]]; then
-  die "This installer is for macOS. On Windows use: irm https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 | iex"
+  die "This installer is for macOS. On Windows use: irm https://axcel-blade.github.io/Illustrator-MCP/install.ps1 | iex"
 fi
 
 # ---------------------------------------------------------------- prerequisites
@@ -69,7 +69,18 @@ else
   step "Finding release"
   if [[ -n "$VERSION" ]]; then API="https://api.github.com/repos/$REPO/releases/tags/v${VERSION#v}"; else API="https://api.github.com/repos/$REPO/releases/latest"; fi
   REL="$TMP/release.json"
-  curl -fsSL -H "Accept: application/vnd.github+json" -A "illustrator-mcp-installer" "$API" -o "$REL" || die "Could not read $API"
+  # Anonymous API calls are limited to 60/hour per IP (shared CI runners and office NATs hit that).
+  # Use a token when one is set; it is sent only to api.github.com.
+  AUTH=()
+  TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+  [[ -n "$TOKEN" ]] && AUTH=(-H "Authorization: Bearer $TOKEN")
+  HTTP_CODE="$(curl -sSL -w '%{http_code}' -H "Accept: application/vnd.github+json" ${AUTH[@]+"${AUTH[@]}"} -A "illustrator-mcp-installer" "$API" -o "$REL" || echo 000)"
+  case "$HTTP_CODE" in
+    200) ;;
+    403|429) die "GitHub API rate limit reached for this network. Wait an hour, or set GITHUB_TOKEN and run again." ;;
+    404) die "No release found${VERSION:+ for version $VERSION}." ;;
+    *) die "Could not read $API (HTTP $HTTP_CODE)" ;;
+  esac
   # Parse with Node (always present here) instead of requiring jq.
   read -r TAG ASSET_NAME ASSET_URL SUM_URL ZIPBALL < <(node -e '
     const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));

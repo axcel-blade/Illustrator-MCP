@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 1.1.1 — 2026-11-23
+
+### Fixed
+- Windows one-line installer: the release checksum was always reported as mismatched, so `irm …/install.ps1 | iex` failed for 1.1.0. GitHub serves `.sha256` files as `application/octet-stream`, which Windows PowerShell 5.1 returns as bytes; the installer now decodes them. The installer CI now also tests the real download-and-checksum path on Windows and macOS.
+- Both installers use `GITHUB_TOKEN` / `GH_TOKEN` for the release lookup when set (anonymous GitHub API calls are limited to 60/hour per IP, which shared networks and CI runners hit), and explain a rate limit or an unknown `--version` instead of failing with a raw API error.
+
+## 1.1.0 — 2026-11-23
+
 ### Added
 - 29 tools in `src/mcp/tools/extended.ts` / `illustrator-scripts/extended.jsx`, verified live against Illustrator (`pnpm test:e2e:extended`):
   - Path & object: `offset_path`, `outline_stroke`, `expand_objects`, `create_blend`, `release_blend`, `release_clipping_mask`, `release_compound_path`.
@@ -17,6 +25,9 @@
 - `docs/CONFIGURATION.md`, `tests/security/` (sandbox, script injection, allowlist, confirmation gates, auth), `.gitattributes`, Documentation issue template and Show-and-tell discussion template.
 - `node dist/index.js --version`.
 - Docker for the docs site: `site/Dockerfile` (nginx, healthcheck, installers as plain text, 404 page), `site/Dockerfile.dev` + `docker-compose.dev.yml` (hot reload, including `docs/`), `docker-compose.yml` (`SITE_PORT`), root `.dockerignore`, and the `docker.yml` workflow that builds and checks both images.
+
+### Changed
+- The repository is now `axcel-blade/Illustrator-MCP`: links, installer downloads and the docs site (https://axcel-blade.github.io/Illustrator-MCP/) use the new name.
 
 ### Fixed
 - The `.env` file (created by the installers from `.env.example`) was never read; it is now loaded at startup, without overriding the MCP client's `env` settings.

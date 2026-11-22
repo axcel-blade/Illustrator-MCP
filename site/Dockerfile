@@ -19,7 +19,7 @@ COPY installers ./installers
 COPY site ./site
 
 # Local default: site at http://localhost:8080/.
-# Use ASTRO_BASE=/Illustrator-MCP-Server for GitHub Pages path parity.
+# Use ASTRO_BASE=/Illustrator-MCP for GitHub Pages path parity.
 ARG ASTRO_SITE=http://localhost:8080
 ARG ASTRO_BASE=/
 ENV ASTRO_SITE=$ASTRO_SITE \

@@ -68,10 +68,10 @@ Manual: edit `%APPDATA%\Claude\claude_desktop_config.json`:
   "mcpServers": {
     "illustrator": {
       "command": "node",
-      "args": ["C:\\path\\to\\Illustrator-MCP-Server\\dist\\index.js"],
+      "args": ["C:\\path\\to\\Illustrator-MCP\\dist\\index.js"],
       "env": {
         "ILLUSTRATOR_ADAPTER": "auto",
-        "ALLOWED_PATHS": "C:\\Users\\you\\Documents\\IllustratorMCP;C:\\path\\to\\Illustrator-MCP-Server\\output"
+        "ALLOWED_PATHS": "C:\\Users\\you\\Documents\\IllustratorMCP;C:\\path\\to\\Illustrator-MCP\\output"
       }
     }
   }
@@ -89,10 +89,10 @@ Manual: edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "illustrator": {
       "command": "node",
-      "args": ["/absolute/path/to/Illustrator-MCP-Server/dist/index.js"],
+      "args": ["/absolute/path/to/Illustrator-MCP/dist/index.js"],
       "env": {
         "ILLUSTRATOR_ADAPTER": "auto",
-        "ALLOWED_PATHS": "/Users/you/Documents/IllustratorMCP;/absolute/path/to/Illustrator-MCP-Server/output"
+        "ALLOWED_PATHS": "/Users/you/Documents/IllustratorMCP;/absolute/path/to/Illustrator-MCP/output"
       }
     }
   }

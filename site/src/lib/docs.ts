@@ -1,7 +1,7 @@
 import type { MarkdownInstance } from "astro";
 import pkg from "../../../package.json";
 
-export const REPO = "https://github.com/axcel-blade/Illustrator-MCP-Server";
+export const REPO = "https://github.com/axcel-blade/Illustrator-MCP";
 export const VERSION: string = pkg.version;
 
 /** docs/*.md from the repository root; the site never keeps its own copy. */
@@ -49,5 +49,5 @@ export const toolCount = (): number => {
   return tools ? tools.entry.getHeadings().filter((h) => h.depth === 2).length : 0;
 };
 
-/** Prefix a site path with the configured base ("/Illustrator-MCP-Server"). */
+/** Prefix a site path with the configured base ("/Illustrator-MCP"). */
 export const href = (path: string): string => `${import.meta.env.BASE_URL.replace(/\/$/, "")}${path}`;

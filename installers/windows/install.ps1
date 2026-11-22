@@ -9,7 +9,7 @@
   (other servers and settings kept) after a .illustrator-mcp.bak backup.
   Re-running upgrades in place and keeps .env, output\ and logs\.
 
-  irm https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 | iex
+  irm https://axcel-blade.github.io/Illustrator-MCP/install.ps1 | iex
 
   Options when piped (environment variables):
     ILLUSTRATOR_MCP_VERSION=1.0.0        install a specific version (default: latest release)
@@ -32,7 +32,7 @@ param(
 $fromSource = $false
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$Repo = 'axcel-blade/Illustrator-MCP-Server'
+$Repo = 'axcel-blade/Illustrator-MCP'
 
 function Write-Step($m) { Write-Host "==> $m" -ForegroundColor Cyan }
 function Write-Ok($m) { Write-Host "  ok  $m" -ForegroundColor Green }
@@ -164,7 +164,18 @@ try {
   } else {
     Write-Step 'Finding release'
     $api = if ($Version) { "https://api.github.com/repos/$Repo/releases/tags/v$($Version.TrimStart('v'))" } else { "https://api.github.com/repos/$Repo/releases/latest" }
-    $rel = Invoke-RestMethod -Uri $api -Headers @{ 'User-Agent' = 'illustrator-mcp-installer'; Accept = 'application/vnd.github+json' }
+    $headers = @{ 'User-Agent' = 'illustrator-mcp-installer'; Accept = 'application/vnd.github+json' }
+    # Anonymous API calls are limited to 60/hour per IP (shared CI runners and office NATs hit that).
+    # Use a token when one is set; it is sent only to api.github.com.
+    $token = if ($env:GITHUB_TOKEN) { $env:GITHUB_TOKEN } else { $env:GH_TOKEN }
+    if ($token) { $headers.Authorization = "Bearer $token" }
+    try { $rel = Invoke-RestMethod -Uri $api -Headers $headers }
+    catch {
+      $msg = "$_"
+      if ($msg -match 'rate limit') { Stop-Install 'GitHub API rate limit reached for this network. Wait an hour, or set GITHUB_TOKEN and run again.' }
+      if ($msg -match 'Not Found') { Stop-Install "No release found$(if ($Version) { " for version $Version" })." }
+      throw
+    }
     $asset = $rel.assets | Where-Object { $_.name -like 'illustrator-mcp-*.zip' } | Select-Object -First 1
     if (-not $asset) {
       # Releases made before the CD workflow carry no prebuilt zip: build from the source archive.
@@ -177,7 +188,12 @@ try {
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zip -UseBasicParsing
     $sumAsset = $rel.assets | Where-Object { $_.name -eq "$($asset.name).sha256" } | Select-Object -First 1
     if ($sumAsset) {
-      $expected = ((Invoke-WebRequest -Uri $sumAsset.browser_download_url -UseBasicParsing).Content -split '\s+')[0]
+      # GitHub serves .sha256 assets as application/octet-stream, for which Windows PowerShell 5.1
+      # returns .Content as byte[] (splitting that yields numbers, not the hash). Decode explicitly.
+      $sumContent = (Invoke-WebRequest -Uri $sumAsset.browser_download_url -UseBasicParsing).Content
+      if ($sumContent -is [byte[]]) { $sumContent = [Text.Encoding]::ASCII.GetString($sumContent) }
+      $expected = ([string]$sumContent).Trim() -split '\s+' | Select-Object -First 1
+      if ($expected -notmatch '^[0-9a-fA-F]{64}$') { Stop-Install "Could not read the checksum for $($asset.name)" }
       $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
       if ($expected.ToLower() -ne $actual) { Stop-Install "Checksum mismatch for $($asset.name)" }
       Write-Ok 'checksum verified'

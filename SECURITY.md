@@ -11,7 +11,7 @@
 ## Reporting a vulnerability
 
 **Do not open a public issue.** Report privately through
-[GitHub security advisories](https://github.com/axcel-blade/Illustrator-MCP-Server/security/advisories/new).
+[GitHub security advisories](https://github.com/axcel-blade/Illustrator-MCP/security/advisories/new).
 
 Please include:
 
