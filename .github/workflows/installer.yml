@@ -92,6 +92,18 @@ jobs:
           node (Join-Path $dir 'scripts\smoke-install.mjs')
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
+      # The steps above install a local archive; this one exercises the real download path
+      # (GitHub API, asset download, .sha256 verification) the one-liner uses, piped through iex.
+      - name: Install the latest published release (download + checksum)
+        shell: powershell
+        env:
+          ILLUSTRATOR_MCP_DIR: ${{ runner.temp }}\imcp-latest
+          ILLUSTRATOR_MCP_CONFIGURE_CLIENTS: "0"
+        run: |
+          Get-Content installers\windows\install.ps1 -Raw | Invoke-Expression
+          node (Join-Path $env:ILLUSTRATOR_MCP_DIR 'scripts\smoke-install.mjs')
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
   macos:
     name: macOS installer
     runs-on: macos-latest
@@ -141,3 +153,8 @@ jobs:
           grep -q 'user setting' "$DIR/.env"
           test "$(shasum "$CFG")" = "$BEFORE"
           node "$DIR/scripts/smoke-install.mjs"
+
+      - name: Install the latest published release (download + checksum)
+        run: |
+          ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0 bash installers/macos/install.sh --dir "$RUNNER_TEMP/imcp-latest"
+          node "$RUNNER_TEMP/imcp-latest/scripts/smoke-install.mjs"

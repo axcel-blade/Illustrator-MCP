@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 1.1.1 — 2026-11-23
+
+### Fixed
+- Windows one-line installer: the release checksum was always reported as mismatched, so `irm …/install.ps1 | iex` failed for 1.1.0. GitHub serves `.sha256` files as `application/octet-stream`, which Windows PowerShell 5.1 returns as bytes; the installer now decodes them. The installer CI now also tests the real download-and-checksum path on Windows and macOS.
+
 ## 1.1.0 — 2026-11-23
 
 ### Added

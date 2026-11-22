@@ -177,7 +177,12 @@ try {
     Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $zip -UseBasicParsing
     $sumAsset = $rel.assets | Where-Object { $_.name -eq "$($asset.name).sha256" } | Select-Object -First 1
     if ($sumAsset) {
-      $expected = ((Invoke-WebRequest -Uri $sumAsset.browser_download_url -UseBasicParsing).Content -split '\s+')[0]
+      # GitHub serves .sha256 assets as application/octet-stream, for which Windows PowerShell 5.1
+      # returns .Content as byte[] (splitting that yields numbers, not the hash). Decode explicitly.
+      $sumContent = (Invoke-WebRequest -Uri $sumAsset.browser_download_url -UseBasicParsing).Content
+      if ($sumContent -is [byte[]]) { $sumContent = [Text.Encoding]::ASCII.GetString($sumContent) }
+      $expected = ([string]$sumContent).Trim() -split '\s+' | Select-Object -First 1
+      if ($expected -notmatch '^[0-9a-fA-F]{64}$') { Stop-Install "Could not read the checksum for $($asset.name)" }
       $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
       if ($expected.ToLower() -ne $actual) { Stop-Install "Checksum mismatch for $($asset.name)" }
       Write-Ok 'checksum verified'
