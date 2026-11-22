@@ -75,7 +75,7 @@ jobs:
         run: |
           $zip = (Get-ChildItem release\illustrator-mcp-*.zip).FullName
           $dir = Join-Path $env:RUNNER_TEMP 'imcp'
-          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -NoClaude
+          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -NoClients
           node (Join-Path $dir 'scripts\smoke-install.mjs')
           if ($LASTEXITCODE -ne 0) { exit 1 }
 

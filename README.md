@@ -47,7 +47,10 @@ Requirements: **Windows 10/11 or macOS**, Node.js 20+, pnpm (via Corepack), Adob
 
 ### One-line install
 
-Installs the latest release and registers it with Claude Desktop (read the scripts first:
+Installs the latest release and registers it with every MCP client it finds: Claude Desktop, Claude Code,
+Cursor, Windsurf, VS Code (Copilot), Cline, Roo Code, Gemini CLI and Codex. Existing configs are merged with
+a backup; pass `-NoClients` / `--no-clients` (or set `ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0`) to skip this.
+Read the scripts first:
 [install.ps1](installers/windows/install.ps1), [install.sh](installers/macos/install.sh)).
 
 ```powershell
@@ -84,7 +87,7 @@ chmod +x scripts/*.sh
 On first use, macOS may ask to allow Terminal/Node to control Illustrator
 (System Settings → Privacy & Security → Automation).
 
-Restart Claude Desktop, then ask: *"Check Illustrator status, then create a modern luxury skincare poster with a
+Fully quit and reopen your AI client, then ask: *"Check Illustrator status, then create a modern luxury skincare poster with a
 minimalist layout, beige background, elegant typography and a product image."*
 
 ## Commands

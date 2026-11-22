@@ -3,17 +3,20 @@
   One-line installer for Illustrator MCP on Windows.
 .DESCRIPTION
   Downloads a release of Illustrator MCP from GitHub, installs it to
-  %LOCALAPPDATA%\IllustratorMCP, installs production dependencies with pnpm and (optionally)
-  registers it with Claude Desktop. Re-running upgrades in place and keeps .env, output\ and logs\.
+  %LOCALAPPDATA%\IllustratorMCP, installs production dependencies with pnpm and registers it with
+  every MCP client it finds: Claude Desktop (incl. Microsoft Store), Claude Code, Cursor, Windsurf,
+  VS Code / Insiders (Copilot), Cline, Roo Code, Gemini CLI and Codex. Existing configs are merged
+  (other servers and settings kept) after a .illustrator-mcp.bak backup.
+  Re-running upgrades in place and keeps .env, output\ and logs\.
 
   irm https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 | iex
 
   Options when piped (environment variables):
-    ILLUSTRATOR_MCP_VERSION=1.0.0       install a specific version (default: latest release)
-    ILLUSTRATOR_MCP_DIR=D:\Tools\IllMCP  install folder
-    ILLUSTRATOR_MCP_CONFIGURE_CLAUDE=0   do not touch the Claude Desktop config
+    ILLUSTRATOR_MCP_VERSION=1.0.0        install a specific version (default: latest release)
+    ILLUSTRATOR_MCP_DIR=D:\Tools\IllMCP   install folder
+    ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0   do not touch any MCP client config (prints the snippet)
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File install.ps1 -Version 1.0.0 -ConfigureClaude
+  powershell -ExecutionPolicy Bypass -File install.ps1 -Version 1.0.0 -NoClients
 #>
 [CmdletBinding()]
 param(
@@ -21,8 +24,10 @@ param(
   [string]$InstallDir = $env:ILLUSTRATOR_MCP_DIR,
   # Local release zip (used by CI and for offline installs) instead of downloading.
   [string]$Archive,
-  [switch]$ConfigureClaude,
-  [switch]$NoClaude
+  # Skip all MCP client configuration (-NoClaude is the old name).
+  [Alias('NoClaude')][switch]$NoClients,
+  # Accepted for compatibility; clients are configured by default.
+  [switch]$ConfigureClaude
 )
 $fromSource = $false
 $ErrorActionPreference = 'Stop'
@@ -34,7 +39,104 @@ function Write-Ok($m) { Write-Host "  ok  $m" -ForegroundColor Green }
 function Stop-Install($m) { Write-Host "  !!  $m" -ForegroundColor Red; throw $m }
 
 if (-not $InstallDir) { $InstallDir = Join-Path $env:LOCALAPPDATA 'IllustratorMCP' }
-if (-not $NoClaude -and $env:ILLUSTRATOR_MCP_CONFIGURE_CLAUDE -ne '0') { $ConfigureClaude = $true }
+$configureClients = (-not $NoClients) -and $env:ILLUSTRATOR_MCP_CONFIGURE_CLIENTS -ne '0' -and $env:ILLUSTRATOR_MCP_CONFIGURE_CLAUDE -ne '0'
+$ServerName = 'illustrator'
+
+# ---------------------------------------------------------------- MCP client registration
+function Save-JsonNoBom([string]$Path, $Object) {
+  # Windows PowerShell's "Set-Content -Encoding utf8" writes a BOM, which JSON.parse (used by
+  # Claude Desktop, Cursor, VS Code ...) rejects.
+  $text = $Object | ConvertTo-Json -Depth 20
+  [IO.File]::WriteAllText($Path, $text + [Environment]::NewLine, (New-Object Text.UTF8Encoding $false))
+}
+
+# Merge our entry into <RootKey> of a JSON config. Clients that are not installed (folder missing)
+# are skipped unless -Create; files that are not plain JSON (e.g. JSONC with comments) are skipped.
+function Set-JsonMcpServer([string]$Label, [string]$ConfigPath, [string]$RootKey, $Entry, [switch]$Create) {
+  $dir = Split-Path $ConfigPath -Parent
+  if (-not (Test-Path $dir)) {
+    if (-not $Create) { return $false }
+    New-Item -ItemType Directory -Force $dir | Out-Null
+  }
+  $json = $null
+  if (Test-Path $ConfigPath) {
+    $raw = [IO.File]::ReadAllText($ConfigPath)
+    if ($raw.Trim()) {
+      try { $json = $raw | ConvertFrom-Json -ErrorAction Stop } catch {
+        Write-Warning "${Label}: skipped $ConfigPath (not plain JSON, e.g. it has comments). Add '$ServerName' manually."
+        return $false
+      }
+    }
+    Copy-Item $ConfigPath "$ConfigPath.illustrator-mcp.bak" -Force
+  }
+  if (-not $json) { $json = [pscustomobject]@{} }
+  if (-not $json.PSObject.Properties[$RootKey]) { $json | Add-Member -NotePropertyName $RootKey -NotePropertyValue ([pscustomobject]@{}) -Force }
+  $json.$RootKey | Add-Member -NotePropertyName $ServerName -NotePropertyValue $Entry -Force
+  Save-JsonNoBom $ConfigPath $json
+  Write-Ok "$Label ($ConfigPath)"
+  return $true
+}
+
+function Invoke-Quiet([scriptblock]$Block) {
+  $old = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+  try { & $Block *> $null; return ($LASTEXITCODE -eq 0) } catch { return $false } finally { $ErrorActionPreference = $old }
+}
+
+function Register-McpClients([string]$Entry) {
+  $envBlock = [pscustomobject]@{ ILLUSTRATOR_ADAPTER = 'com' }
+  $std = [pscustomobject]@{ command = 'node'; args = @($Entry); env = $envBlock }
+  $vsc = [pscustomobject]@{ type = 'stdio'; command = 'node'; args = @($Entry); env = $envBlock }
+  $done = New-Object System.Collections.Generic.List[string]
+
+  # Claude Desktop is the primary client: always written, even before its first launch.
+  if (Set-JsonMcpServer 'Claude Desktop' (Join-Path $env:APPDATA 'Claude\claude_desktop_config.json') 'mcpServers' $std -Create) { $done.Add('Claude Desktop') }
+  # The Microsoft Store build keeps its config in a virtualized AppData folder.
+  $pkgs = Join-Path $env:LOCALAPPDATA 'Packages'
+  if (Test-Path $pkgs) {
+    foreach ($pkg in (Get-ChildItem $pkgs -Directory -Filter 'Claude_*' -ErrorAction SilentlyContinue)) {
+      if (Set-JsonMcpServer 'Claude Desktop (Store)' (Join-Path $pkg.FullName 'LocalCache\Roaming\Claude\claude_desktop_config.json') 'mcpServers' $std -Create) { $done.Add('Claude Desktop (Store)') }
+    }
+  }
+  $clients = @(
+    @('Cursor', (Join-Path $env:USERPROFILE '.cursor\mcp.json'), 'mcpServers', $std),
+    @('Windsurf', (Join-Path $env:USERPROFILE '.codeium\windsurf\mcp_config.json'), 'mcpServers', $std),
+    @('Gemini CLI', (Join-Path $env:USERPROFILE '.gemini\settings.json'), 'mcpServers', $std),
+    @('Cline', (Join-Path $env:APPDATA 'Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json'), 'mcpServers', $std),
+    @('Roo Code', (Join-Path $env:APPDATA 'Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\mcp_settings.json'), 'mcpServers', $std),
+    # VS Code / Insiders (Copilot agent mode) use "servers" with an explicit type.
+    @('VS Code', (Join-Path $env:APPDATA 'Code\User\mcp.json'), 'servers', $vsc),
+    @('VS Code Insiders', (Join-Path $env:APPDATA 'Code - Insiders\User\mcp.json'), 'servers', $vsc)
+  )
+  foreach ($c in $clients) { if (Set-JsonMcpServer $c[0] $c[1] $c[2] $c[3]) { $done.Add($c[0]) } }
+
+  # CLI-managed clients. ILLUSTRATOR_MCP_SKIP_CLI_CLIENTS=1 skips the CLIs (tests).
+  $useCli = $env:ILLUSTRATOR_MCP_SKIP_CLI_CLIENTS -ne '1'
+  if ($useCli -and (Get-Command claude -ErrorAction SilentlyContinue)) {
+    [void](Invoke-Quiet { claude mcp remove --scope user $ServerName })
+    if (Invoke-Quiet { claude mcp add --scope user $ServerName -e ILLUSTRATOR_ADAPTER=com -- node $Entry }) { Write-Ok 'Claude Code (user scope)'; $done.Add('Claude Code') }
+    else { Write-Warning "Claude Code: 'claude mcp add' failed. Add '$ServerName' manually." }
+  }
+  $codexDone = $false
+  if ($useCli -and (Get-Command codex -ErrorAction SilentlyContinue)) {
+    [void](Invoke-Quiet { codex mcp remove $ServerName })
+    if (Invoke-Quiet { codex mcp add $ServerName --env ILLUSTRATOR_ADAPTER=com -- node $Entry }) { Write-Ok 'Codex'; $done.Add('Codex'); $codexDone = $true }
+  }
+  $toml = Join-Path $env:USERPROFILE '.codex\config.toml'
+  if (-not $codexDone -and (Test-Path (Split-Path $toml))) {
+    $text = ''
+    if (Test-Path $toml) { $text = [IO.File]::ReadAllText($toml); Copy-Item $toml "$toml.illustrator-mcp.bak" -Force }
+    # Replace a previous [mcp_servers.illustrator] table (and its sub-tables) so reinstalls update the path.
+    $pattern = '(?ms)^\[mcp_servers\.' + $ServerName + '(?:\.[^\]]*)?\][^\r\n]*\r?\n.*?(?=^\[(?!mcp_servers\.' + $ServerName + '[\].])|\z)'
+    $text = [regex]::Replace($text, $pattern, '').TrimEnd()
+    if ($text) { $text += "`n`n" }
+    $p = $Entry -replace '\\', '/'
+    $text += "[mcp_servers.$ServerName]`ncommand = `"node`"`nargs = [`"$p`"]`nenv = { ILLUSTRATOR_ADAPTER = `"com`" }`n"
+    [IO.File]::WriteAllText($toml, $text, (New-Object Text.UTF8Encoding $false))
+    Write-Ok "Codex ($toml)"
+    $done.Add('Codex')
+  }
+  return ,$done
+}
 [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
 # ---------------------------------------------------------------- prerequisites
@@ -127,24 +229,15 @@ try {
   $installed = (Get-Content (Join-Path $InstallDir 'package.json') -Raw | ConvertFrom-Json).version
   Write-Ok "Illustrator MCP $installed$(if ($fromSource) { ' (built from source)' })"
 
-  # ---------------------------------------------------------------- Claude Desktop
-  $server = [pscustomobject]@{ command = 'node'; args = @($entry); env = [pscustomobject]@{ ILLUSTRATOR_ADAPTER = 'com' } }
-  if ($ConfigureClaude) {
-    Write-Step 'Registering with Claude Desktop'
-    $cfgPath = Join-Path $env:APPDATA 'Claude\claude_desktop_config.json'
-    New-Item -ItemType Directory -Force (Split-Path $cfgPath) | Out-Null
-    if (Test-Path $cfgPath) {
-      Copy-Item $cfgPath "$cfgPath.bak" -Force
-      $raw = Get-Content $cfgPath -Raw
-      $cfg = if ($raw.Trim()) { $raw | ConvertFrom-Json } else { [pscustomobject]@{} }
-    } else { $cfg = [pscustomobject]@{} }
-    if (-not $cfg.PSObject.Properties['mcpServers']) { $cfg | Add-Member -NotePropertyName mcpServers -NotePropertyValue ([pscustomobject]@{}) }
-    $cfg.mcpServers | Add-Member -NotePropertyName illustrator -NotePropertyValue $server -Force
-    $cfg | ConvertTo-Json -Depth 10 | Set-Content -Path $cfgPath -Encoding utf8
-    Write-Ok "Updated $cfgPath (restart Claude Desktop)"
+  # ---------------------------------------------------------------- MCP clients
+  if ($configureClients) {
+    Write-Step 'Registering with MCP clients'
+    $configured = Register-McpClients $entry
+    Write-Host "  Configured: $($configured -join ', '). Fully quit and reopen them to load Illustrator MCP."
   } else {
-    Write-Step 'Add this to %APPDATA%\Claude\claude_desktop_config.json:'
-    Write-Host (@{ mcpServers = @{ illustrator = $server } } | ConvertTo-Json -Depth 10)
+    Write-Step 'Add this to your MCP client config (e.g. %APPDATA%\Claude\claude_desktop_config.json):'
+    $server = [pscustomobject]@{ command = 'node'; args = @($entry); env = [pscustomobject]@{ ILLUSTRATOR_ADAPTER = 'com' } }
+    Write-Host ([pscustomobject]@{ mcpServers = [pscustomobject]@{ illustrator = $server } } | ConvertTo-Json -Depth 10)
   }
 
   Write-Host ''

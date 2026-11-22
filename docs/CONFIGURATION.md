@@ -62,9 +62,35 @@ Put it behind an HTTPS tunnel or reverse proxy; see [INSTALLATION.md](INSTALLATI
 
 ## Install locations used by the one-line installers
 
-| OS | Folder | Claude config |
-|---|---|---|
-| Windows | `%LOCALAPPDATA%\IllustratorMCP` | `%APPDATA%\Claude\claude_desktop_config.json` |
-| macOS | `~/Library/Application Support/IllustratorMCP` | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| OS | Program folder |
+|---|---|
+| Windows | `%LOCALAPPDATA%\IllustratorMCP` |
+| macOS | `~/Library/Application Support/IllustratorMCP` |
 
 Both create `~/Documents/IllustratorMCP` as the default output folder.
+
+## MCP clients the installers configure
+
+The installers add a server named `illustrator` (`node <install>/dist/index.js`, with `ILLUSTRATOR_ADAPTER`
+set to `com` on Windows or `applescript` on macOS) to every client they find. Claude Desktop is always
+configured; the others only when their config folder exists, meaning the client is installed.
+
+| Client | Windows | macOS |
+|---|---|---|
+| Claude Desktop | `%APPDATA%\Claude\claude_desktop_config.json`, plus the Microsoft Store build under `%LOCALAPPDATA%\Packages\Claude_*\LocalCache\Roaming\Claude\` | `~/Library/Application Support/Claude/claude_desktop_config.json` |
+| Claude Code | `claude mcp add --scope user illustrator …` | same |
+| Cursor | `~/.cursor/mcp.json` | same |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | same |
+| VS Code / Insiders (Copilot) | `%APPDATA%\Code\User\mcp.json` (key `servers`) | `~/Library/Application Support/Code/User/mcp.json` |
+| Cline | `%APPDATA%\Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json` | same path under `~/Library/Application Support/` |
+| Roo Code | `%APPDATA%\Code\User\globalStorage\rooveterinaryinc.roo-cline\settings\mcp_settings.json` | same path under `~/Library/Application Support/` |
+| Gemini CLI | `~/.gemini/settings.json` | same |
+| Codex | `codex mcp add illustrator …`, otherwise `~/.codex/config.toml` | same |
+
+- Existing files are **merged**: other servers and settings are kept, and the previous file is saved as
+  `<file>.illustrator-mcp.bak`. Re-running the installer updates the entry instead of adding a second one.
+- Files that are not plain JSON (for example a VS Code `mcp.json` with comments) are left untouched, with a
+  warning to add the entry by hand.
+- Skip all of this with `-NoClients` (Windows), `--no-clients` (macOS) or `ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0`;
+  the installer then prints the JSON snippet instead.
+- After installing, **fully quit and reopen** each client so it starts the server.

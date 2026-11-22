@@ -10,7 +10,7 @@
   - Automation: `run_action` and `print_document` (both require `confirm: true`), `fit_artboard_to_artwork`, `export_artboards`, `data_merge_export`, `bind_variable`, `list_variables`, `capture_dataset`, `apply_dataset`.
 - Core e2e suite now exercises `edit_path_points` instead of marking anchor editing NOT TESTED.
 
-- One-line installers for Windows (`irm …/install.ps1 | iex`) and macOS (`curl …/install.sh | bash`) in `installers/`: download the latest release (checksum-verified), keep `.env`/`output`/`logs` on upgrade, merge into the Claude Desktop config with a backup, and build from source for releases without a prebuilt package.
+- One-line installers for Windows (`irm …/install.ps1 | iex`) and macOS (`curl …/install.sh | bash`) in `installers/`: download the latest release (checksum-verified), keep `.env`/`output`/`logs` on upgrade, register with every MCP client found (Claude Desktop incl. the Microsoft Store build, Claude Code, Cursor, Windsurf, VS Code/Insiders, Cline, Roo Code, Gemini CLI, Codex), merging existing configs with a `.illustrator-mcp.bak` backup and writing JSON without a BOM, and build from source for releases without a prebuilt package.
 - Release automation: `release.yml` (manual: bump version, date changelog, verify, tag, GitHub Release) and `cd.yml` (on tags: build, test-install and attach `illustrator-mcp-X.Y.Z.zip` + `.sha256`).
 - Docs site (`site/`, Astro) rendering `docs/*.md`, published to GitHub Pages by `pages.yml`; also serves the installers.
 - `installer.yml` CI: installs the package on clean Windows and macOS runners and checks upgrades and Claude config merging.

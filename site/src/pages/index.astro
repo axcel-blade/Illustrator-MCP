@@ -26,15 +26,19 @@ const tools = toolCount();
     <div class="install">
       <div class="card">
         <h3>Windows</h3>
-        <p>PowerShell. Installs to <code>%LOCALAPPDATA%\IllustratorMCP</code> and registers it with Claude Desktop.</p>
+        <p>PowerShell. Installs to <code>%LOCALAPPDATA%\IllustratorMCP</code> and registers it with your AI clients.</p>
         <div class="cmd"><code>{win}</code><button type="button" data-copy={win}>Copy</button></div>
       </div>
       <div class="card">
         <h3>macOS</h3>
-        <p>Terminal. Installs to <code>~/Library/Application Support/IllustratorMCP</code> and registers it with Claude Desktop.</p>
+        <p>Terminal. Installs to <code>~/Library/Application Support/IllustratorMCP</code> and registers it with your AI clients.</p>
         <div class="cmd"><code>{mac}</code><button type="button" data-copy={mac}>Copy</button></div>
       </div>
     </div>
+    <p class="note">
+      Configures every MCP client it finds: Claude Desktop, Claude Code, Cursor, Windsurf, VS Code (Copilot), Cline, Roo Code,
+      Gemini CLI and Codex. Existing configs are merged, with a backup. <a href={href("/docs/configuration/#mcp-clients-the-installers-configure")}>Details</a>.
+    </p>
     <p class="note">
       Needs Node.js 20+ and Adobe Illustrator 2020 or newer. Read a script before piping it to a shell: <a href={href("/install.ps1")}>install.ps1</a>,
       <a href={href("/install.sh")}>install.sh</a>. Manual setup, ChatGPT and remote HTTP: <a href={href("/docs/installation/")}>installation guide</a>.

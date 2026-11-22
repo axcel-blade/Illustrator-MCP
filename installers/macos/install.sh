@@ -4,31 +4,34 @@
 #   curl -fsSL https://axcel-blade.github.io/Illustrator-MCP-Server/install.sh | bash
 #
 # Downloads a release from GitHub into ~/Library/Application Support/IllustratorMCP, installs
-# production dependencies with pnpm and (optionally) registers it with Claude Desktop.
-# Re-running upgrades in place and keeps .env, output/ and logs/.
+# production dependencies with pnpm and registers it with every MCP client it finds: Claude
+# Desktop, Claude Code, Cursor, Windsurf, VS Code / Insiders (Copilot), Cline, Roo Code, Gemini CLI
+# and Codex. Existing configs are merged (other servers and settings kept) after a
+# .illustrator-mcp.bak backup. Re-running upgrades in place and keeps .env, output/ and logs/.
 #
 # Options (flags, or environment variables when piped):
-#   --version X.Y.Z     ILLUSTRATOR_MCP_VERSION      install a specific version (default: latest)
-#   --dir PATH          ILLUSTRATOR_MCP_DIR          install folder
-#   --archive FILE                                   use a local release zip (offline / CI)
-#   --no-claude         ILLUSTRATOR_MCP_CONFIGURE_CLAUDE=0   do not touch the Claude Desktop config
+#   --version X.Y.Z     ILLUSTRATOR_MCP_VERSION               install a specific version (default: latest)
+#   --dir PATH          ILLUSTRATOR_MCP_DIR                   install folder
+#   --archive FILE                                            use a local release zip (offline / CI)
+#   --no-clients        ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0   do not touch any MCP client config
 set -euo pipefail
 
 REPO="axcel-blade/Illustrator-MCP-Server"
 VERSION="${ILLUSTRATOR_MCP_VERSION:-}"
 INSTALL_DIR="${ILLUSTRATOR_MCP_DIR:-$HOME/Library/Application Support/IllustratorMCP}"
 ARCHIVE=""
-CONFIGURE_CLAUDE=true
-[[ "${ILLUSTRATOR_MCP_CONFIGURE_CLAUDE:-1}" == "0" ]] && CONFIGURE_CLAUDE=false
+CONFIGURE_CLIENTS=true
+[[ "${ILLUSTRATOR_MCP_CONFIGURE_CLIENTS:-1}" == "0" || "${ILLUSTRATOR_MCP_CONFIGURE_CLAUDE:-1}" == "0" ]] && CONFIGURE_CLIENTS=false
+SERVER_NAME="illustrator"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) VERSION="${2#v}"; shift 2 ;;
     --dir) INSTALL_DIR="$2"; shift 2 ;;
     --archive) ARCHIVE="$2"; shift 2 ;;
-    --no-claude) CONFIGURE_CLAUDE=false; shift ;;
-    --configure-claude) CONFIGURE_CLAUDE=true; shift ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    --no-clients|--no-claude) CONFIGURE_CLIENTS=false; shift ;;
+    --configure-claude) CONFIGURE_CLIENTS=true; shift ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -122,25 +125,95 @@ node -e 'import(require("url").pathToFileURL(process.argv[1]).href).catch((e) =>
 INSTALLED="$(node -p 'require(process.argv[1]).version' "$INSTALL_DIR/package.json")"
 ok "Illustrator MCP $INSTALLED$([[ "$FROM_SOURCE" == true ]] && echo ' (built from source)')"
 
-# ---------------------------------------------------------------- Claude Desktop
-SNIPPET_NODE='const entry = process.argv[1];
-const server = { command: "node", args: [entry], env: { ILLUSTRATOR_ADAPTER: "applescript" } };'
-if [[ "$CONFIGURE_CLAUDE" == true ]]; then
-  step "Registering with Claude Desktop"
-  CFG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-  mkdir -p "$(dirname "$CFG")"
-  [[ -f "$CFG" ]] && cp "$CFG" "$CFG.bak"
-  node -e "$SNIPPET_NODE"'
-    const fs = require("fs"); const path = process.argv[2];
-    let cfg = {};
-    if (fs.existsSync(path)) { const raw = fs.readFileSync(path, "utf8").trim(); if (raw) cfg = JSON.parse(raw); }
-    cfg.mcpServers = { ...(cfg.mcpServers || {}), illustrator: server };
-    fs.writeFileSync(path, JSON.stringify(cfg, null, 2) + "\n");
-  ' "$ENTRY" "$CFG"
-  ok "Updated $CFG (restart Claude Desktop)"
+# ---------------------------------------------------------------- MCP clients
+# JSON configs and the Codex TOML are merged by Node (always present here) instead of jq.
+CLIENTS_JS="$TMP/clients.cjs"
+cat > "$CLIENTS_JS" <<'JS'
+const fs = require("fs");
+const path = require("path");
+const [entry, name, home, mode, skipCodexToml] = process.argv.slice(2);
+const env = { ILLUSTRATOR_ADAPTER: "applescript" };
+const std = { command: "node", args: [entry], env };
+const vsc = { type: "stdio", command: "node", args: [entry], env };
+if (mode === "print") { console.log(JSON.stringify({ mcpServers: { [name]: std } }, null, 2)); process.exit(0); }
+
+const sup = path.join(home, "Library", "Application Support");
+const done = [];
+const ok = (label, file) => { console.log(`\x1b[32m  ok  ${label} (${file})\x1b[0m`); done.push(label); };
+const warn = (msg) => console.error(`\x1b[33m  !   ${msg}\x1b[0m`);
+
+/* Merge our server into <rootKey>. Not-installed clients (folder missing) are skipped unless
+   create; files that are not plain JSON (e.g. JSONC with comments) are left untouched. */
+function setJson(label, file, rootKey, server, create = false) {
+  const dir = path.dirname(file);
+  if (!fs.existsSync(dir)) { if (!create) return; fs.mkdirSync(dir, { recursive: true }); }
+  let cfg = {};
+  if (fs.existsSync(file)) {
+    const raw = fs.readFileSync(file, "utf8").replace(/^﻿/, "");
+    if (raw.trim()) {
+      try { cfg = JSON.parse(raw); } catch { warn(`${label}: skipped ${file} (not plain JSON, e.g. it has comments). Add "${name}" manually.`); return; }
+    }
+    fs.copyFileSync(file, `${file}.illustrator-mcp.bak`);
+  }
+  cfg[rootKey] = { ...(cfg[rootKey] || {}), [name]: server };
+  fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + "\n");
+  ok(label, file);
+}
+
+/* Claude Desktop is the primary client: always written, even before its first launch. */
+setJson("Claude Desktop", path.join(sup, "Claude", "claude_desktop_config.json"), "mcpServers", std, true);
+setJson("Cursor", path.join(home, ".cursor", "mcp.json"), "mcpServers", std);
+setJson("Windsurf", path.join(home, ".codeium", "windsurf", "mcp_config.json"), "mcpServers", std);
+setJson("Gemini CLI", path.join(home, ".gemini", "settings.json"), "mcpServers", std);
+setJson("Cline", path.join(sup, "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "settings", "cline_mcp_settings.json"), "mcpServers", std);
+setJson("Roo Code", path.join(sup, "Code", "User", "globalStorage", "rooveterinaryinc.roo-cline", "settings", "mcp_settings.json"), "mcpServers", std);
+/* VS Code / Insiders (Copilot agent mode) use "servers" with an explicit type. */
+setJson("VS Code", path.join(sup, "Code", "User", "mcp.json"), "servers", vsc);
+setJson("VS Code Insiders", path.join(sup, "Code - Insiders", "User", "mcp.json"), "servers", vsc);
+
+/* Codex without its CLI: edit ~/.codex/config.toml directly. */
+const toml = path.join(home, ".codex", "config.toml");
+if (skipCodexToml !== "1" && fs.existsSync(path.dirname(toml))) {
+  let text = "";
+  if (fs.existsSync(toml)) { text = fs.readFileSync(toml, "utf8"); fs.copyFileSync(toml, `${toml}.illustrator-mcp.bak`); }
+  /* Drop a previous [mcp_servers.<name>] table and its sub-tables so reinstalls update the path. */
+  const re = new RegExp(`^\\[mcp_servers\\.${name}(?:\\.[^\\]]*)?\\][^\\r\\n]*\\r?\\n[\\s\\S]*?(?=^\\[(?!mcp_servers\\.${name}[\\].])|(?![\\s\\S]))`, "gm");
+  text = text.replace(re, "").trimEnd();
+  if (text) text += "\n\n";
+  text += `[mcp_servers.${name}]\ncommand = "node"\nargs = [${JSON.stringify(entry)}]\nenv = { ILLUSTRATOR_ADAPTER = "applescript" }\n`;
+  fs.writeFileSync(toml, text);
+  ok("Codex", toml);
+}
+fs.writeFileSync(process.env.CLIENTS_DONE_FILE, done.join(", "));
+JS
+
+if [[ "$CONFIGURE_CLIENTS" == true ]]; then
+  step "Registering with MCP clients"
+  # CLI-managed clients first. ILLUSTRATOR_MCP_SKIP_CLI_CLIENTS=1 skips the CLIs (tests).
+  CLI_DONE=()
+  CODEX_CLI_OK=0
+  if [[ "${ILLUSTRATOR_MCP_SKIP_CLI_CLIENTS:-}" != "1" ]]; then
+    if command -v claude >/dev/null 2>&1; then
+      claude mcp remove --scope user "$SERVER_NAME" >/dev/null 2>&1 || true
+      if claude mcp add --scope user "$SERVER_NAME" -e ILLUSTRATOR_ADAPTER=applescript -- node "$ENTRY" >/dev/null 2>&1; then
+        ok "Claude Code (user scope)"; CLI_DONE+=("Claude Code")
+      else printf '\033[33m  !   Claude Code: "claude mcp add" failed. Add "%s" manually.\033[0m\n' "$SERVER_NAME"; fi
+    fi
+    if command -v codex >/dev/null 2>&1; then
+      codex mcp remove "$SERVER_NAME" >/dev/null 2>&1 || true
+      if codex mcp add "$SERVER_NAME" --env ILLUSTRATOR_ADAPTER=applescript -- node "$ENTRY" >/dev/null 2>&1; then
+        ok "Codex"; CLI_DONE+=("Codex"); CODEX_CLI_OK=1
+      fi
+    fi
+  fi
+  export CLIENTS_DONE_FILE="$TMP/clients-done"
+  node "$CLIENTS_JS" "$ENTRY" "$SERVER_NAME" "$HOME" write "$CODEX_CLI_OK"
+  DONE="$(cat "$CLIENTS_DONE_FILE")"
+  for c in ${CLI_DONE[@]+"${CLI_DONE[@]}"}; do DONE="$DONE, $c"; done
+  echo "  Configured: $DONE. Fully quit and reopen them to load Illustrator MCP."
 else
-  step "Add this to ~/Library/Application Support/Claude/claude_desktop_config.json:"
-  node -e "$SNIPPET_NODE"'console.log(JSON.stringify({ mcpServers: { illustrator: server } }, null, 2));' "$ENTRY"
+  step "Add this to your MCP client config (e.g. ~/Library/Application Support/Claude/claude_desktop_config.json):"
+  node "$CLIENTS_JS" "$ENTRY" "$SERVER_NAME" "$HOME" print 0
 fi
 
 echo

@@ -51,28 +51,44 @@ jobs:
           [System.Management.Automation.Language.Parser]::ParseFile("$PWD\installers\windows\install.ps1", [ref]$null, [ref]$errors) | Out-Null
           if ($errors) { $errors | ForEach-Object { Write-Host $_.Message }; exit 1 }
 
-      - name: Install (Windows PowerShell 5.1, fresh)
+      - name: Install (Windows PowerShell 5.1, fresh) and register MCP clients
         shell: powershell
+        env:
+          ILLUSTRATOR_MCP_SKIP_CLI_CLIENTS: "1"
         run: |
           $zip = (Get-ChildItem release\illustrator-mcp-*.zip).FullName
           $dir = Join-Path $env:RUNNER_TEMP 'imcp'
-          $cfgDir = Join-Path $env:APPDATA 'Claude'
-          New-Item -ItemType Directory -Force $cfgDir | Out-Null
-          '{"mcpServers":{"other":{"command":"x"}},"theme":"dark"}' | Set-Content (Join-Path $cfgDir 'claude_desktop_config.json')
-          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -ConfigureClaude
+          $claude = Join-Path $env:APPDATA 'Claude\claude_desktop_config.json'
+          $cursor = Join-Path $env:USERPROFILE '.cursor\mcp.json'
+          $vscode = Join-Path $env:APPDATA 'Code\User\mcp.json'
+          $toml = Join-Path $env:USERPROFILE '.codex\config.toml'
+          New-Item -ItemType Directory -Force (Split-Path $claude), (Split-Path $cursor), (Split-Path $vscode), (Split-Path $toml) | Out-Null
+          '{"mcpServers":{"other":{"command":"x"}},"theme":"dark"}' | Out-File $claude -Encoding ascii
+          '{"mcpServers":{"other":{"command":"x"}}}' | Out-File $cursor -Encoding ascii
+          "// comment`n{`"servers`":{}}" | Out-File $vscode -Encoding ascii
+          "[mcp_servers.illustrator]`ncommand = `"old`"`n" | Out-File $toml -Encoding ascii
+          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir
           node (Join-Path $dir 'scripts\smoke-install.mjs')
           if ($LASTEXITCODE -ne 0) { exit 1 }
-          $cfg = Get-Content (Join-Path $cfgDir 'claude_desktop_config.json') -Raw | ConvertFrom-Json
-          if (-not $cfg.mcpServers.other -or -not $cfg.mcpServers.illustrator -or $cfg.theme -ne 'dark') { Write-Error 'Claude config was not merged'; exit 1 }
+          # JSON written without a BOM and merged, not replaced; JSONC left alone; TOML entry replaced once.
+          node -e "const fs=require('fs'); for (const f of process.argv.slice(1,3)) { const t=fs.readFileSync(f,'utf8'); if (t.charCodeAt(0)===0xFEFF) throw f+' has BOM'; const c=JSON.parse(t); if (!c.mcpServers.other||!c.mcpServers.illustrator) throw f+' not merged'; } if (JSON.parse(fs.readFileSync(process.argv[1],'utf8')).theme!=='dark') throw 'claude settings lost'" $claude $cursor
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          if ((Get-Content $vscode -Raw) -notmatch 'comment') { Write-Error 'JSONC config was modified'; exit 1 }
+          $t = Get-Content $toml -Raw
+          if ($t -match 'old' -or ([regex]::Matches($t, '\[mcp_servers\.illustrator\]')).Count -ne 1) { Write-Error "codex toml wrong: $t"; exit 1 }
+          if (-not (Test-Path "$claude.illustrator-mcp.bak")) { Write-Error 'no backup'; exit 1 }
 
-      - name: Upgrade keeps .env
+      - name: Upgrade keeps .env; -NoClients leaves configs alone
         shell: powershell
         run: |
           $zip = (Get-ChildItem release\illustrator-mcp-*.zip).FullName
           $dir = Join-Path $env:RUNNER_TEMP 'imcp'
+          $claude = Join-Path $env:APPDATA 'Claude\claude_desktop_config.json'
+          $before = Get-Content $claude -Raw
           'LOG_LEVEL=warn # user setting' | Set-Content (Join-Path $dir '.env')
-          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -NoClaude
+          .\installers\windows\install.ps1 -Archive $zip -InstallDir $dir -NoClients
           if ((Get-Content (Join-Path $dir '.env') -Raw) -notmatch 'user setting') { Write-Error '.env was overwritten'; exit 1 }
+          if ((Get-Content $claude -Raw) -ne $before) { Write-Error '-NoClients changed the Claude config'; exit 1 }
           node (Join-Path $dir 'scripts\smoke-install.mjs')
           if ($LASTEXITCODE -ne 0) { exit 1 }
 
@@ -93,23 +109,35 @@ jobs:
       - name: Shell syntax
         run: bash -n installers/macos/install.sh
 
-      - name: Install (fresh) and merge Claude config
+      - name: Install (fresh) and register MCP clients
+        env:
+          ILLUSTRATOR_MCP_SKIP_CLI_CLIENTS: "1"
+        run: |
+          ZIP="$(ls release/illustrator-mcp-*.zip)"
+          DIR="$RUNNER_TEMP/imcp"
+          SUP="$HOME/Library/Application Support"
+          CFG="$SUP/Claude/claude_desktop_config.json"
+          mkdir -p "$SUP/Claude" "$HOME/.cursor" "$SUP/Code/User" "$HOME/.codex"
+          echo '{"mcpServers":{"other":{"command":"x"}},"theme":"dark"}' > "$CFG"
+          echo '{"mcpServers":{"other":{"command":"x"}}}' > "$HOME/.cursor/mcp.json"
+          printf '// comment\n{"servers":{}}\n' > "$SUP/Code/User/mcp.json"
+          printf '[mcp_servers.illustrator]\ncommand = "old"\n' > "$HOME/.codex/config.toml"
+          bash installers/macos/install.sh --archive "$ZIP" --dir "$DIR"
+          node "$DIR/scripts/smoke-install.mjs"
+          node -e 'for (const f of process.argv.slice(1)) { const c = require(f); if (!c.mcpServers.other || !c.mcpServers.illustrator) throw new Error(f + " not merged"); } if (require(process.argv[1]).theme !== "dark") throw new Error("claude settings lost")' "$CFG" "$HOME/.cursor/mcp.json"
+          grep -q comment "$SUP/Code/User/mcp.json"
+          ! grep -q old "$HOME/.codex/config.toml"
+          test "$(grep -c '^\[mcp_servers.illustrator\]' "$HOME/.codex/config.toml")" = 1
+          test -f "$CFG.illustrator-mcp.bak"
+
+      - name: Upgrade keeps .env; --no-clients leaves configs alone
         run: |
           ZIP="$(ls release/illustrator-mcp-*.zip)"
           DIR="$RUNNER_TEMP/imcp"
           CFG="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
-          mkdir -p "$(dirname "$CFG")"
-          echo '{"mcpServers":{"other":{"command":"x"}},"theme":"dark"}' > "$CFG"
-          bash installers/macos/install.sh --archive "$ZIP" --dir "$DIR"
-          node "$DIR/scripts/smoke-install.mjs"
-          node -e 'const c = require(process.argv[1]); if (!c.mcpServers.other || !c.mcpServers.illustrator || c.theme !== "dark") process.exit(1)' "$CFG"
-          test -f "$CFG.bak"
-
-      - name: Upgrade keeps .env
-        run: |
-          ZIP="$(ls release/illustrator-mcp-*.zip)"
-          DIR="$RUNNER_TEMP/imcp"
+          BEFORE="$(shasum "$CFG")"
           echo 'LOG_LEVEL=warn # user setting' > "$DIR/.env"
-          bash installers/macos/install.sh --archive "$ZIP" --dir "$DIR" --no-claude
+          bash installers/macos/install.sh --archive "$ZIP" --dir "$DIR" --no-clients
           grep -q 'user setting' "$DIR/.env"
+          test "$(shasum "$CFG")" = "$BEFORE"
           node "$DIR/scripts/smoke-install.mjs"
