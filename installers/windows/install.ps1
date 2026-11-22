@@ -9,7 +9,7 @@
   (other servers and settings kept) after a .illustrator-mcp.bak backup.
   Re-running upgrades in place and keeps .env, output\ and logs\.
 
-  irm https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 | iex
+  irm https://axcel-blade.github.io/Illustrator-MCP/install.ps1 | iex
 
   Options when piped (environment variables):
     ILLUSTRATOR_MCP_VERSION=1.0.0        install a specific version (default: latest release)
@@ -32,7 +32,7 @@ param(
 $fromSource = $false
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
-$Repo = 'axcel-blade/Illustrator-MCP-Server'
+$Repo = 'axcel-blade/Illustrator-MCP'
 
 function Write-Step($m) { Write-Host "==> $m" -ForegroundColor Cyan }
 function Write-Ok($m) { Write-Host "  ok  $m" -ForegroundColor Green }

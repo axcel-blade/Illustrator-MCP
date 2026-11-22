@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # One-line installer for Illustrator MCP on macOS.
 #
-#   curl -fsSL https://axcel-blade.github.io/Illustrator-MCP-Server/install.sh | bash
+#   curl -fsSL https://axcel-blade.github.io/Illustrator-MCP/install.sh | bash
 #
 # Downloads a release from GitHub into ~/Library/Application Support/IllustratorMCP, installs
 # production dependencies with pnpm and registers it with every MCP client it finds: Claude
@@ -16,7 +16,7 @@
 #   --no-clients        ILLUSTRATOR_MCP_CONFIGURE_CLIENTS=0   do not touch any MCP client config
 set -euo pipefail
 
-REPO="axcel-blade/Illustrator-MCP-Server"
+REPO="axcel-blade/Illustrator-MCP"
 VERSION="${ILLUSTRATOR_MCP_VERSION:-}"
 INSTALL_DIR="${ILLUSTRATOR_MCP_DIR:-$HOME/Library/Application Support/IllustratorMCP}"
 ARCHIVE=""
@@ -41,7 +41,7 @@ ok() { printf '\033[32m  ok  %s\033[0m\n' "$*"; }
 die() { printf '\033[31m  !!  %s\033[0m\n' "$*" >&2; exit 1; }
 
 if [[ "$(uname -s)" != "Darwin" && "${ILLUSTRATOR_MCP_ALLOW_ANY_OS:-}" != "1" ]]; then
-  die "This installer is for macOS. On Windows use: irm https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 | iex"
+  die "This installer is for macOS. On Windows use: irm https://axcel-blade.github.io/Illustrator-MCP/install.ps1 | iex"
 fi
 
 # ---------------------------------------------------------------- prerequisites

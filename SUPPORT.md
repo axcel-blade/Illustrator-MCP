@@ -11,9 +11,9 @@
 
 | Need | Where |
 |---|---|
-| Question or how-to | [Discussions → Q&A](https://github.com/axcel-blade/Illustrator-MCP-Server/discussions) |
-| Idea or feature request | [Discussions → Ideas](https://github.com/axcel-blade/Illustrator-MCP-Server/discussions) or a feature-request issue |
-| Bug | [New issue → Bug report](https://github.com/axcel-blade/Illustrator-MCP-Server/issues/new/choose) |
+| Question or how-to | [Discussions → Q&A](https://github.com/axcel-blade/Illustrator-MCP/discussions) |
+| Idea or feature request | [Discussions → Ideas](https://github.com/axcel-blade/Illustrator-MCP/discussions) or a feature-request issue |
+| Bug | [New issue → Bug report](https://github.com/axcel-blade/Illustrator-MCP/issues/new/choose) |
 | Works/doesn't work on your Illustrator version | Illustrator compatibility issue template |
 | Security problem | [SECURITY.md](SECURITY.md) — never a public issue |
 

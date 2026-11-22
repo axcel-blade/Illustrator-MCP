@@ -1,12 +1,12 @@
 # Illustrator MCP
 
-[![CI](https://github.com/axcel-blade/Illustrator-MCP-Server/actions/workflows/ci.yml/badge.svg)](https://github.com/axcel-blade/Illustrator-MCP-Server/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/github/v/release/axcel-blade/Illustrator-MCP-Server?sort=semver)](https://github.com/axcel-blade/Illustrator-MCP-Server/releases/latest)
-[![License: MIT](https://img.shields.io/github/license/axcel-blade/Illustrator-MCP-Server)](LICENSE)
+[![CI](https://github.com/axcel-blade/Illustrator-MCP/actions/workflows/ci.yml/badge.svg)](https://github.com/axcel-blade/Illustrator-MCP/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/axcel-blade/Illustrator-MCP?sort=semver)](https://github.com/axcel-blade/Illustrator-MCP/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/axcel-blade/Illustrator-MCP)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](package.json)
 [![MCP](https://img.shields.io/badge/MCP-server-6E56CF)](https://modelcontextprotocol.io)
-[![Installer](https://github.com/axcel-blade/Illustrator-MCP-Server/actions/workflows/installer.yml/badge.svg)](https://github.com/axcel-blade/Illustrator-MCP-Server/actions/workflows/installer.yml)
-[![Docs](https://img.shields.io/badge/docs-site-D9570D)](https://axcel-blade.github.io/Illustrator-MCP-Server/)
+[![Installer](https://github.com/axcel-blade/Illustrator-MCP/actions/workflows/installer.yml/badge.svg)](https://github.com/axcel-blade/Illustrator-MCP/actions/workflows/installer.yml)
+[![Docs](https://img.shields.io/badge/docs-site-D9570D)](https://axcel-blade.github.io/Illustrator-MCP/)
 
 An MCP server that lets AI assistants (Claude Desktop, ChatGPT) design in **Adobe Illustrator**: it turns
 natural-language briefs — posters, logos, brand work and, Figma-AI-style, app screens, landing pages, dashboards and UI kits — into structured design plans, builds them as **editable vector artwork**, inspects
@@ -54,11 +54,11 @@ Read the scripts first:
 [install.ps1](installers/windows/install.ps1), [install.sh](installers/macos/install.sh)).
 
 ```powershell
-irm https://axcel-blade.github.io/Illustrator-MCP-Server/install.ps1 | iex
+irm https://axcel-blade.github.io/Illustrator-MCP/install.ps1 | iex
 ```
 
 ```bash
-curl -fsSL https://axcel-blade.github.io/Illustrator-MCP-Server/install.sh | bash
+curl -fsSL https://axcel-blade.github.io/Illustrator-MCP/install.sh | bash
 ```
 
 Settings: [docs/CONFIGURATION.md](docs/CONFIGURATION.md). To build from source instead:
@@ -110,7 +110,7 @@ minimalist layout, beige background, elegant typography and a product image."*
 
 ## Documentation
 
-- **Docs site: https://axcel-blade.github.io/Illustrator-MCP-Server/**
+- **Docs site: https://axcel-blade.github.io/Illustrator-MCP/**
 - [Installation (Windows & macOS)](docs/INSTALLATION.md) — pnpm, Illustrator, Claude Desktop, ChatGPT · [Configuration](docs/CONFIGURATION.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Tool reference](docs/TOOLS.md) (generated) · [Example prompts](docs/EXAMPLES.md)

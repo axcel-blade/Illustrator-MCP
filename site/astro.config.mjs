@@ -3,8 +3,8 @@ import { defineConfig } from "astro/config";
 
 // GitHub Pages defaults; override with ASTRO_SITE / ASTRO_BASE (e.g. a custom domain).
 const site = process.env.ASTRO_SITE || "https://axcel-blade.github.io";
-const base = (process.env.ASTRO_BASE ?? "/Illustrator-MCP-Server").replace(/\/$/, "");
-const REPO = "https://github.com/axcel-blade/Illustrator-MCP-Server";
+const base = (process.env.ASTRO_BASE ?? "/Illustrator-MCP").replace(/\/$/, "");
+const REPO = "https://github.com/axcel-blade/Illustrator-MCP";
 
 /**
  * The site renders the repository's docs/*.md as-is. Rewrite their relative links:
