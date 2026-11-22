@@ -14,6 +14,7 @@ import { registerAppearanceTools } from "./mcp/tools/appearance.js";
 import { registerAssetTools } from "./mcp/tools/assets.js";
 import type { ToolContext } from "./mcp/tools/common.js";
 import { registerDesignTools } from "./mcp/tools/design.js";
+import { registerExtendedTools } from "./mcp/tools/extended.js";
 import { registerDocumentTools } from "./mcp/tools/document.js";
 import { registerExportTools } from "./mcp/tools/export.js";
 import { registerLayerTools } from "./mcp/tools/layers.js";
@@ -70,6 +71,7 @@ export function createServer(ctx: ToolContext): McpServer {
   registerDesignTools(server, ctx);
   registerUiTools(server, ctx);
   registerAdvancedTools(server, ctx);
+  registerExtendedTools(server, ctx);
   registerResources(server, ctx);
   registerPrompts(server);
   return server;

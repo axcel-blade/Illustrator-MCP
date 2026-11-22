@@ -20,7 +20,11 @@ generate_design create_logo create_poster create_flyer create_social_media_graph
 create_app_screen create_landing_page create_web_dashboard create_ui_kit list_ui_components get_design_tokens create_ui_design rename_layers_semantically search_design_knowledge recommend_design_system
 pathfinder flip_objects edit_path_points reverse_path set_path_closed split_path join_paths simplify_path get_image_info replace_image trace_image
 rename_artboard duplicate_artboard delete_artboard list_documents activate_document undo redo analyze_typography apply_typography
-save_design_system list_design_systems get_design_system apply_design_system`.split(/\s+/);
+save_design_system list_design_systems get_design_system apply_design_system
+offset_path outline_stroke expand_objects create_blend release_blend warp_objects release_clipping_mask release_compound_path
+create_text_style apply_text_style list_styles apply_graphic_style apply_brush create_spot_color create_swatch_group list_swatches place_symbol
+create_area_text thread_text_frames set_text_columns set_text_attributes find_replace_text
+run_action fit_artboard_to_artwork export_artboards data_merge_export bind_variable list_variables capture_dataset apply_dataset print_document`.split(/\s+/);
 
 let client: Client;
 let mock: MockAdapter;
@@ -94,6 +98,25 @@ describe("MCP server", () => {
     await call("delete_layer", { name: "Layer 1" });
     expect(mock.calls.length).toBe(before);
     expect((await call("delete_object", { target: { name: "Dot" }, confirm: true })).isError).toBe(false);
+  });
+
+  it("extended tools convert units, gate risky ops and loop exports", async () => {
+    await call("create_document", { width: 400, height: 300, name: "Ext" });
+    await call("offset_path", { targets: [{ name: "a" }], offset: 1, units: "in" });
+    expect(mock.calls.at(-1)).toMatchObject({ op: "offset_path", args: { offset: 72, join: "miter", replace: false } });
+    await call("create_text_style", { kind: "character", name: "Accent", character: { fontSize: 20, color: "#ff0000" } });
+    expect(mock.calls.at(-1)).toMatchObject({ op: "create_text_style", args: { character: { fontSize: 20, color: { hex: "#FF0000" } } } });
+    expect((await call("create_text_style", { kind: "character", name: "x", paragraph: { align: "left" } })).body.error.code).toBe("VALIDATION_ERROR");
+    expect(((await client.callTool({ name: "set_text_attributes", arguments: { target: { name: "t" }, character: { bogus: 1 } } })) as ToolResult).isError).toBe(true);
+    const before = mock.calls.length;
+    expect((await call("run_action", { action: "A", set: "S" })).body.error.code).toBe("CONFIRMATION_REQUIRED");
+    expect((await call("print_document", {})).body.error.code).toBe("CONFIRMATION_REQUIRED");
+    expect(mock.calls.length).toBe(before);
+    const ex = await call("export_artboards", { folder: outDir, prefix: "ab", formats: ["png", "svg"] });
+    expect(ex.isError).toBe(false);
+    expect(mock.calls.filter((c) => c.op === "export_png" || c.op === "export_svg").length).toBeGreaterThanOrEqual(2);
+    expect(String((mock.calls.find((c) => c.op === "export_png")!.args as { path: string }).path)).toMatch(/ab-Artboard-1\.png$/);
+    expect((await call("export_artboards", { folder: "C:\\Windows", formats: ["png"] })).body.error.code).toBe("PATH_NOT_ALLOWED");
   });
 
   it("enforces path restrictions and overwrite protection", async () => {
