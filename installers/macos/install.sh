@@ -69,7 +69,18 @@ else
   step "Finding release"
   if [[ -n "$VERSION" ]]; then API="https://api.github.com/repos/$REPO/releases/tags/v${VERSION#v}"; else API="https://api.github.com/repos/$REPO/releases/latest"; fi
   REL="$TMP/release.json"
-  curl -fsSL -H "Accept: application/vnd.github+json" -A "illustrator-mcp-installer" "$API" -o "$REL" || die "Could not read $API"
+  # Anonymous API calls are limited to 60/hour per IP (shared CI runners and office NATs hit that).
+  # Use a token when one is set; it is sent only to api.github.com.
+  AUTH=()
+  TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+  [[ -n "$TOKEN" ]] && AUTH=(-H "Authorization: Bearer $TOKEN")
+  HTTP_CODE="$(curl -sSL -w '%{http_code}' -H "Accept: application/vnd.github+json" ${AUTH[@]+"${AUTH[@]}"} -A "illustrator-mcp-installer" "$API" -o "$REL" || echo 000)"
+  case "$HTTP_CODE" in
+    200) ;;
+    403|429) die "GitHub API rate limit reached for this network. Wait an hour, or set GITHUB_TOKEN and run again." ;;
+    404) die "No release found${VERSION:+ for version $VERSION}." ;;
+    *) die "Could not read $API (HTTP $HTTP_CODE)" ;;
+  esac
   # Parse with Node (always present here) instead of requiring jq.
   read -r TAG ASSET_NAME ASSET_URL SUM_URL ZIPBALL < <(node -e '
     const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"));
