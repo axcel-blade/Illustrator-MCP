@@ -10,7 +10,7 @@ Illustrator. Tool details: [TOOLS.md](TOOLS.md) (generated). Protocol details: [
 - **Not scriptable**: Illustrator's scripting API (v31) does not expose it, so the server does not offer it.
 
 Live suites were last run on **Illustrator 2027 (31.0), Windows 11, COM bridge**: `test:e2e:jobs` (14/14),
-`test:e2e:resources` (14/14) and `test:e2e:production` (26/26), all on 2026-11-23. Older suites (`test:e2e`, `test:e2e:design`,
+`test:e2e:resources` (14/14) and `test:e2e:production` (26/26) and `test:e2e:file-menu` (16/16), all on 2026-11-23. Older suites (`test:e2e`, `test:e2e:design`,
 `test:e2e:advanced`, `test:e2e:extended`) were verified on Illustrator 2026 (30.8); see [TEST_REPORT.md](TEST_REPORT.md).
 macOS (AppleScript bridge) is implemented but less exercised.
 
@@ -20,7 +20,11 @@ macOS (AppleScript bridge) is implemented but less exercised.
 |---|---|---|
 | Create, open, close, list, switch documents | `create_document`, `open_document`, `open_file`, `close_document`, `list_documents`, `activate_document` | Live |
 | Open AI, AIT, PDF, EPS, SVG, SVGZ, DXF, DWG, PNG, JPG, TIFF, GIF, BMP, PSD | `open_file` | Live (`.ai`); other formats use Illustrator's own importer |
-| Save in place / as AI, AIT, editable PDF, EPS | `save_file`, `save_document`, `save_document_as` | Live |
+| Save in place / as AI, editable PDF, EPS | `save_file`, `save_document`, `save_document_as` | Live |
+| Save a Copy (AI, PDF, EPS) and Save as Template (.ait); the open document keeps its own file | `save_copy` | Live (document must be saved first) |
+| Save All, Close All (save or discard, with exceptions), Revert | `save_all_documents`, `close_all_documents`, `revert_document` | Live; Close All with save refuses never-saved documents, discard and revert need `confirm: true` |
+| Open Recent, New from Template | `list_recent_files`, `open_recent_file`, `new_from_template` | Live; the list is Illustrator's own and may not yet show files opened by scripts |
+| Place / import files (images, AI, PDF, SVG, EPS) | `place_image` | Live |
 | Document info and settings (color mode, profile, units, raster effects) | `inspect_document`, `get_document_settings`, `set_raster_effects_resolution`, `set_document_color_mode` | Live |
 | Units | `set_document_units` | Partial: sets the session default and a ruler preference; `Document.rulerUnits` is read-only |
 | Ruler origin, document bleed | — | Not offered: bleed is fixed at creation (applied at PDF export instead); ruler origin not yet verified |

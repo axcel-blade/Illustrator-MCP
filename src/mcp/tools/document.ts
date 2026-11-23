@@ -2,9 +2,10 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { extname } from "node:path";
 import { z } from "zod";
 import { UnitSchema, toPoints, PAPER_SIZES_MM } from "../../utils/units.js";
+import { McpDesignError } from "../../utils/errors.js";
 import { defineTool, DESTRUCTIVE, op, P, READ_ONLY, requireConfirm, unitsArg, WRITE, type ToolContext } from "./common.js";
 
-const SAVE_EXTENSIONS = [".ai", ".ait", ".pdf", ".eps"];
+const SAVE_EXTENSIONS = [".ai", ".pdf", ".eps"];
 const OPEN_EXTENSIONS = [".ai", ".ait", ".pdf", ".eps", ".svg", ".svgz", ".dxf", ".dwg", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".gif", ".bmp", ".psd"];
 
 export function registerDocumentTools(server: McpServer, ctx: ToolContext): void {
@@ -108,7 +109,7 @@ export function registerDocumentTools(server: McpServer, ctx: ToolContext): void
 
   defineTool(server, ctx, {
     name: "save_file",
-    description: "Save the active document. Without a path, saves in place (the document must already have a file). With a path, saves as an editable native file whose format follows the extension: .ai, .ait (template), .pdf (Illustrator-editable) or .eps. The open document is re-targeted to the new file. Existing files are not overwritten unless overwrite: true.",
+    description: "Save the active document. Without a path, saves in place (the document must already have a file). With a path, saves as an editable native file whose format follows the extension: .ai, .pdf (Illustrator-editable) or .eps (for a template .ait use save_copy). The open document is re-targeted to the new file. Existing files are not overwritten unless overwrite: true.",
     input: {
       path: z.string().min(1).optional().describe("Target path (relative paths resolve inside the output directory); omit to save in place"),
       overwrite: z.boolean().default(false),
@@ -119,6 +120,7 @@ export function registerDocumentTools(server: McpServer, ctx: ToolContext): void
     annotations: WRITE,
     handler: async (a) => {
       if (!a.path) return op(ctx, "save_file", {});
+      if (a.path.toLowerCase().endsWith(".ait")) throw new McpDesignError("VALIDATION_ERROR", "Illustrator always saves the open document as .ai. Save a template with save_copy { path: \"name.ait\" }.");
       const path = ctx.paths.resolveOutput(a.path, { extensions: SAVE_EXTENSIONS, overwrite: a.overwrite });
       const format = extname(path).slice(1).toLowerCase();
       return op(ctx, "save_file", { path, format, pdfCompatible: a.pdfCompatible, embedLinkedFiles: a.embedLinkedFiles, embedICCProfile: a.embedICCProfile });
@@ -131,6 +133,80 @@ export function registerDocumentTools(server: McpServer, ctx: ToolContext): void
     input: { path: z.string().min(1), reopen: z.boolean().default(false).describe("Open a second copy even if the file is already open") },
     annotations: WRITE,
     handler: async ({ path, reopen }) => op(ctx, "open_file", { path: ctx.paths.resolve(path, { extensions: OPEN_EXTENSIONS, mustExist: true }), reopen }),
+  });
+
+  defineTool(server, ctx, {
+    name: "save_copy",
+    description: "Save a copy of the active document (File > Save a Copy) as .ai, .pdf (editable), .eps or a template (.ait, File > Save as Template). The open document keeps pointing at its own file. The document must already be saved, with no unsaved changes.",
+    input: {
+      path: z.string().min(1).describe("Copy path (relative paths resolve inside the output directory)"),
+      overwrite: z.boolean().default(false), pdfCompatible: z.boolean().default(true), embedLinkedFiles: z.boolean().default(false),
+    },
+    annotations: WRITE,
+    handler: async (a) => {
+      const path = ctx.paths.resolveOutput(a.path, { extensions: [".ai", ".ait", ".pdf", ".eps"], overwrite: a.overwrite });
+      return op(ctx, "save_copy", { path, format: extname(path).slice(1).toLowerCase(), pdfCompatible: a.pdfCompatible, embedLinkedFiles: a.embedLinkedFiles });
+    },
+  });
+
+  defineTool(server, ctx, {
+    name: "save_all_documents",
+    description: "Save every open document that has a file and unsaved changes (File > Save All). Documents that were never saved are listed as skipped.",
+    input: {},
+    annotations: WRITE,
+    handler: async () => op(ctx, "save_all_documents", {}),
+  });
+
+  defineTool(server, ctx, {
+    name: "revert_document",
+    description: "Revert the active document to its last saved version (File > Revert). Unsaved changes are lost, so it requires confirm: true.",
+    input: { confirm: z.boolean().optional() },
+    annotations: DESTRUCTIVE,
+    handler: async (a) => {
+      requireConfirm(a.confirm, "Reverting discards unsaved changes and");
+      return op(ctx, "revert_document", {});
+    },
+  });
+
+  defineTool(server, ctx, {
+    name: "close_all_documents",
+    description: "Close all open documents (File > Close All), optionally keeping some open. mode: save saves changed documents first (refuses if one was never saved); mode: discard closes without saving and requires confirm: true.",
+    input: { mode: z.enum(["save", "discard"]), except: z.array(z.string().min(1)).max(100).optional().describe("Document names to keep open"), confirm: z.boolean().optional() },
+    annotations: DESTRUCTIVE,
+    handler: async (a) => {
+      if (a.mode === "discard") requireConfirm(a.confirm, "Closing all documents without saving");
+      return op(ctx, "close_all_documents", { mode: a.mode, except: a.except });
+    },
+  });
+
+  defineTool(server, ctx, {
+    name: "list_recent_files",
+    description: "List Illustrator's recent files (File > Open Recent Files), newest first, with whether each still exists. Open one with open_recent_file or open_file.",
+    input: { limit: z.number().int().min(1).max(50).default(20) },
+    annotations: READ_ONLY,
+    handler: async (a) => op(ctx, "list_recent_files", a),
+  });
+
+  defineTool(server, ctx, {
+    name: "open_recent_file",
+    description: "Open a file from Illustrator's recent-files list by its index from list_recent_files. The file must still be inside an allowed directory.",
+    input: { index: z.number().int().min(0).max(49) },
+    annotations: WRITE,
+    handler: async ({ index }) => {
+      const list = await ctx.bridge.run<{ files: { index: number; path: string; exists: boolean }[] }>("list_recent_files", { limit: 50 });
+      const entry = list.data.files.find((f) => f.index === index);
+      if (!entry) throw new McpDesignError("OBJECT_NOT_FOUND", `No recent file at index ${index} (${list.data.files.length} listed).`);
+      const path = ctx.paths.resolve(entry.path, { extensions: OPEN_EXTENSIONS, mustExist: true });
+      return op(ctx, "open_file", { path, reopen: false });
+    },
+  });
+
+  defineTool(server, ctx, {
+    name: "new_from_template",
+    description: "Create a new untitled document from an Illustrator template (.ait) (File > New from Template). The template file itself is not changed.",
+    input: { path: z.string().min(1) },
+    annotations: WRITE,
+    handler: async ({ path }) => op(ctx, "open_file", { path: ctx.paths.resolve(path, { extensions: [".ait"], mustExist: true }), reopen: true }),
   });
 
   defineTool(server, ctx, {

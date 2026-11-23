@@ -26,6 +26,7 @@ Runs in CI or on any machine; no Illustrator needed. Files in `tests/unit/`:
 | `pnpm test:e2e:http` / `test:e2e:reconnect` | Streamable HTTP with auth / Illustrator quit and relaunch | — |
 | `pnpm test:e2e:jobs` | Background job for a 162-element plan, `save_file` (.ai/.pdf/in place), `open_file` | Own document only |
 | `pnpm test:e2e:resources` | Every `illustrator://` resource and every prompt | Own document only |
+| `pnpm test:e2e:file-menu` | Save a Copy (.ai/.pdf/.ait), Revert, Save All, Close All (keeps documents that were already open), Open Recent, New from Template | Own documents only |
 | `pnpm test:e2e:production` | P4 tools: shapes, shear, layers, settings, TIFF/selection/print-PDF export, preflight, cleanup, batch, report | Own document only |
 
 Each step passes only after the result is read back from Illustrator or found on disk.

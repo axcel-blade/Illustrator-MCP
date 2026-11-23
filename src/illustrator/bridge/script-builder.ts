@@ -10,7 +10,7 @@ const MODULES = ["bootstrap.jsx", "document.jsx", "shapes.jsx", "typography.jsx"
  * is contacted, and the JSX dispatcher refuses again on its side.
  */
 export const ALLOWED_OPS = new Set([
-  "status", "create_document", "open_document", "close_document", "save_document", "save_document_as", "save_file", "open_file",
+  "status", "create_document", "open_document", "close_document", "save_document", "save_document_as", "save_file", "open_file", "save_copy", "save_all_documents", "revert_document", "close_all_documents", "list_recent_files",
   "inspect_document", "get_artboards", "create_artboard", "resize_artboard", "set_document_color_mode",
   "set_document_units", "place_image", "inspect_assets", "embed_images",
   "draw_rectangle", "draw_ellipse", "draw_polygon", "draw_star", "draw_line", "draw_pen_path",

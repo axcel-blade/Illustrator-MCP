@@ -15,7 +15,7 @@ const KNOWN_CODES = new Set<string>([
 ]);
 
 /* Ops that choose their own document; the pin is not applied to them. */
-const UNPINNED_OPS = new Set(["status", "list_documents", "create_document", "open_document", "open_file", "activate_document"]);
+const UNPINNED_OPS = new Set(["status", "list_documents", "create_document", "open_document", "open_file", "activate_document", "save_all_documents", "close_all_documents", "list_recent_files"]);
 
 /** Minimum timeout applied to every bridge call made inside withTimeoutScope (used by background jobs). */
 const timeoutScope = new AsyncLocalStorage<number>();

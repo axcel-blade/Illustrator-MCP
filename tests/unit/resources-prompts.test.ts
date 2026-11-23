@@ -70,7 +70,8 @@ describe("live resources", () => {
     expect(body.tools).toContain("save_file");
     expect(body.backgroundTools).toContain("execute_design_plan");
     expect(body.notScriptable).toContain("Puppet Warp");
-    expect(body.save).toEqual([".ai", ".ait", ".pdf", ".eps"]);
+    expect(body.save).toEqual([".ai", ".pdf", ".eps"]);
+    expect(body.saveCopy).toContain(".ait");
   });
 });
 

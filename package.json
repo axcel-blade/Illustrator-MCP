@@ -28,6 +28,7 @@
     "test:e2e:jobs": "node tests/e2e/jobs.mjs",
     "test:e2e:resources": "node tests/e2e/resources.mjs",
     "test:e2e:production": "node tests/e2e/production.mjs",
+    "test:e2e:file-menu": "node tests/e2e/file-menu.mjs",
     "test:e2e:reconnect": "node tests/e2e/reconnect.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit"

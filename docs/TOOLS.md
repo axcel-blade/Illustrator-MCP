@@ -1,6 +1,6 @@
 # MCP tool reference
 
-Generated from the server (201 tools) by `node scripts/gen-docs.mjs`. Coordinates follow [COORDINATES.md](COORDINATES.md).
+Generated from the server (208 tools) by `node scripts/gen-docs.mjs`. Coordinates follow [COORDINATES.md](COORDINATES.md).
 
 ## `illustrator_status`
 
@@ -63,7 +63,7 @@ Save the active document as a native editable .ai file inside an allowed directo
 
 ## `save_file`
 
-Save the active document. Without a path, saves in place (the document must already have a file). With a path, saves as an editable native file whose format follows the extension: .ai, .ait (template), .pdf (Illustrator-editable) or .eps. The open document is re-targeted to the new file. Existing files are not overwritten unless overwrite: true.
+Save the active document. Without a path, saves in place (the document must already have a file). With a path, saves as an editable native file whose format follows the extension: .ai, .pdf (Illustrator-editable) or .eps (for a template .ait use save_copy). The open document is re-targeted to the new file. Existing files are not overwritten unless overwrite: true.
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -81,6 +81,67 @@ Open a file from an allowed directory in Illustrator: native/vector files (.ai, 
 |---|---|---|
 | `path` * | string |  |
 | `reopen` | boolean | Open a second copy even if the file is already open |
+
+## `save_copy`
+
+Save a copy of the active document (File > Save a Copy) as .ai, .pdf (editable), .eps or a template (.ait, File > Save as Template). The open document keeps pointing at its own file. The document must already be saved, with no unsaved changes.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string | Copy path (relative paths resolve inside the output directory) |
+| `overwrite` | boolean |  |
+| `pdfCompatible` | boolean |  |
+| `embedLinkedFiles` | boolean |  |
+
+## `save_all_documents`
+
+Save every open document that has a file and unsaved changes (File > Save All). Documents that were never saved are listed as skipped.
+
+## `revert_document`
+
+Revert the active document to its last saved version (File > Revert). Unsaved changes are lost, so it requires confirm: true.
+
+> Destructive — requires `confirm: true`.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `confirm` | boolean |  |
+
+## `close_all_documents`
+
+Close all open documents (File > Close All), optionally keeping some open. mode: save saves changed documents first (refuses if one was never saved); mode: discard closes without saving and requires confirm: true.
+
+> Destructive — requires `confirm: true`.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `mode` * | string |  |
+| `except` | array | Document names to keep open |
+| `confirm` | boolean |  |
+
+## `list_recent_files`
+
+List Illustrator's recent files (File > Open Recent Files), newest first, with whether each still exists. Open one with open_recent_file or open_file.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `limit` | integer |  |
+
+## `open_recent_file`
+
+Open a file from Illustrator's recent-files list by its index from list_recent_files. The file must still be inside an allowed directory.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `index` * | integer |  |
+
+## `new_from_template`
+
+Create a new untitled document from an Illustrator template (.ait) (File > New from Template). The template file itself is not changed.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string |  |
 
 ## `inspect_document`
 
