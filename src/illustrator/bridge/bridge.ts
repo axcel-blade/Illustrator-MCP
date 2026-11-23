@@ -14,7 +14,7 @@ const KNOWN_CODES = new Set<string>([
 ]);
 
 /* Ops that choose their own document; the pin is not applied to them. */
-const UNPINNED_OPS = new Set(["status", "list_documents", "create_document", "open_document", "activate_document"]);
+const UNPINNED_OPS = new Set(["status", "list_documents", "create_document", "open_document", "open_file", "activate_document"]);
 
 export interface RunOptions {
   timeoutMs?: number;

@@ -1,7 +1,11 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { extname } from "node:path";
 import { z } from "zod";
 import { UnitSchema, toPoints, PAPER_SIZES_MM } from "../../utils/units.js";
 import { defineTool, DESTRUCTIVE, op, P, READ_ONLY, requireConfirm, unitsArg, WRITE, type ToolContext } from "./common.js";
+
+const SAVE_EXTENSIONS = [".ai", ".ait", ".pdf", ".eps"];
+const OPEN_EXTENSIONS = [".ai", ".ait", ".pdf", ".eps", ".svg", ".svgz", ".dxf", ".dwg", ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".gif", ".bmp", ".psd"];
 
 export function registerDocumentTools(server: McpServer, ctx: ToolContext): void {
   defineTool(server, ctx, {
@@ -100,6 +104,33 @@ export function registerDocumentTools(server: McpServer, ctx: ToolContext): void
       const path = ctx.paths.resolveOutput(a.path, { extensions: [".ai"], overwrite: a.overwrite });
       return op(ctx, "save_document_as", { path, pdfCompatible: a.pdfCompatible, embedLinkedFiles: a.embedLinkedFiles, embedICCProfile: a.embedICCProfile });
     },
+  });
+
+  defineTool(server, ctx, {
+    name: "save_file",
+    description: "Save the active document. Without a path, saves in place (the document must already have a file). With a path, saves as an editable native file whose format follows the extension: .ai, .ait (template), .pdf (Illustrator-editable) or .eps. The open document is re-targeted to the new file. Existing files are not overwritten unless overwrite: true.",
+    input: {
+      path: z.string().min(1).optional().describe("Target path (relative paths resolve inside the output directory); omit to save in place"),
+      overwrite: z.boolean().default(false),
+      pdfCompatible: z.boolean().default(true).describe(".ai: embed PDF content; .pdf: preserve Illustrator editing capabilities"),
+      embedLinkedFiles: z.boolean().default(false),
+      embedICCProfile: z.boolean().default(false),
+    },
+    annotations: WRITE,
+    handler: async (a) => {
+      if (!a.path) return op(ctx, "save_file", {});
+      const path = ctx.paths.resolveOutput(a.path, { extensions: SAVE_EXTENSIONS, overwrite: a.overwrite });
+      const format = extname(path).slice(1).toLowerCase();
+      return op(ctx, "save_file", { path, format, pdfCompatible: a.pdfCompatible, embedLinkedFiles: a.embedLinkedFiles, embedICCProfile: a.embedICCProfile });
+    },
+  });
+
+  defineTool(server, ctx, {
+    name: "open_file",
+    description: "Open a file from an allowed directory in Illustrator: native/vector files (.ai, .ait, .pdf, .eps, .svg, .svgz, .dxf, .dwg) or images (.png, .jpg, .jpeg, .tif, .tiff, .gif, .bmp, .psd), which open as new documents. If the file is already open its document is activated instead, unless reopen: true. Subsequent operations target the opened document.",
+    input: { path: z.string().min(1), reopen: z.boolean().default(false).describe("Open a second copy even if the file is already open") },
+    annotations: WRITE,
+    handler: async ({ path, reopen }) => op(ctx, "open_file", { path: ctx.paths.resolve(path, { extensions: OPEN_EXTENSIONS, mustExist: true }), reopen }),
   });
 
   defineTool(server, ctx, {

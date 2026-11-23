@@ -99,6 +99,56 @@ MCP.ops.save_document_as = function (a) {
   return MCP.docInfo(doc);
 };
 
+/* Save the active document. Without a path it saves in place; with a path it re-targets the
+   document to that file, choosing native save options from the extension (.ai/.ait/.pdf/.eps). */
+MCP.ops.save_file = function (a) {
+  var doc = MCP.doc();
+  if (!a.path) {
+    var hasPath = false;
+    try { hasPath = doc.fullName && doc.fullName.exists; } catch (e) { hasPath = false; }
+    if (!hasPath) MCP.fail("VALIDATION_ERROR", "Document has never been saved; pass a path.");
+    doc.save();
+    var info0 = MCP.docInfo(doc); info0.format = "in-place"; return info0;
+  }
+  var fmt = a.format, opts;
+  if (fmt === "pdf") {
+    opts = new PDFSaveOptions();
+    opts.preserveEditability = a.pdfCompatible !== false;
+    opts.viewAfterSaving = false;
+  } else if (fmt === "eps") {
+    opts = new EPSSaveOptions();
+    opts.embedLinkedFiles = !!a.embedLinkedFiles;
+  } else {
+    opts = new IllustratorSaveOptions();
+    opts.pdfCompatible = a.pdfCompatible !== false;
+    opts.embedICCProfile = !!a.embedICCProfile;
+    opts.embedLinkedFiles = !!a.embedLinkedFiles;
+    opts.fontSubsetThreshold = 100;
+    if (fmt === "ait") opts.saveMultipleArtboards = true;
+  }
+  doc.saveAs(new File(a.path), opts);
+  if (!new File(a.path).exists) MCP.fail("ILLUSTRATOR_SCRIPT_ERROR", "Illustrator reported no error but the file was not written: " + a.path);
+  MCP.pinned = doc;
+  var info = MCP.docInfo(doc); info.format = fmt; info.savedTo = a.path; return info;
+};
+
+/* Open any file Illustrator can read. If the file is already open, activate that document instead. */
+MCP.ops.open_file = function (a) {
+  var f = new File(a.path);
+  if (!f.exists) MCP.fail("FILE_NOT_FOUND", "File not found: " + a.path);
+  var target = String(f.fsName).toLowerCase();
+  for (var i = 0; i < app.documents.length; i++) {
+    var d = app.documents[i], p = null;
+    try { if (d.fullName && d.fullName.exists) p = String(d.fullName.fsName).toLowerCase(); } catch (e) { p = null; }
+    if (p === target && !a.reopen) {
+      d.activate(); MCP.pinned = d;
+      var info0 = MCP.docInfo(d); info0.alreadyOpen = true; return info0;
+    }
+  }
+  MCP.pinned = app.open(f);
+  var info = MCP.docInfo(MCP.pinned); info.alreadyOpen = false; return info;
+};
+
 MCP.ops.inspect_document = function (a) {
   var doc = MCP.doc();
   MCP.useArtboard(doc, a.artboard);
