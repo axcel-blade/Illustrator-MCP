@@ -2,8 +2,10 @@
 
 ## Unreleased
 
+## 1.2.0 — 2026-11-23
+
 ### Added
-- `save_file` (in place, or as .ai/.ait/editable .pdf/.eps by extension) and `open_file` (vector formats and images; activates a file that is already open).
+- `save_file` (in place, or as .ai/editable .pdf/.eps by extension) and `open_file` (vector formats and images; activates a file that is already open).
 - File menu: `save_copy` (Save a Copy, incl. Save as Template .ait), `save_all_documents`, `close_all_documents` (save or discard, with exceptions), `revert_document`, `list_recent_files`, `open_recent_file`, `new_from_template`; verified live by `test:e2e:file-menu` (16/16).
 - Background jobs: 30 long-running tools accept `background: true` and return a `jobId` at once; collect results with `get_job`, `wait_for_job`, `list_jobs`, `cancel_job`. New `ILLUSTRATOR_JOB_TIMEOUT_MS` (default 15 min) for calls inside jobs.
 - Live resources: `illustrator://status`, `documents`, `active-document`, `selection`, `artboards`, `layers`, `colors`, `fonts`, `brushes`, `linked-assets`, `capabilities`.
