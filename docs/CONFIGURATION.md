@@ -21,6 +21,7 @@ Run `node dist/index.js --version` to print the installed version.
 | `MCP_SECRET_PATH` | — | ≥ 24 chars | Secret URL path segment for clients that cannot send headers (ChatGPT "No authentication") |
 | `ILLUSTRATOR_ADAPTER` | `auto` | `auto`, `com`, `applescript`, `mock` | Bridge to Illustrator. `auto` = COM on Windows, AppleScript on macOS. `mock` is for tests only and labels every result as simulated |
 | `ILLUSTRATOR_TIMEOUT_MS` | `60000` | 1000–600000 | Per-operation timeout. Raise it for very large documents or exports |
+| `ILLUSTRATOR_JOB_TIMEOUT_MS` | `900000` | 10000–3600000 | Per-call timeout inside background jobs (`background: true`). Long plans and batch exports run here instead of blocking the MCP request |
 | `ILLUSTRATOR_AUTO_LAUNCH` | `true` | `true`, `false` | Start Illustrator when it is not running. `false` returns `ILLUSTRATOR_NOT_RUNNING` instead |
 | `ALLOWED_PATHS` | `./output;~/Documents/IllustratorMCP` | `;`-separated dirs | The only directories tools may open, place, save or export to. Everything else is rejected with `PATH_NOT_ALLOWED` |
 | `LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` | Log verbosity |

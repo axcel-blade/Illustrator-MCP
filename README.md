@@ -16,7 +16,7 @@ the result, exports previews and applies targeted revisions.
 AI client (Claude Desktop: stdio · ChatGPT: HTTPS)
         │  MCP
         ▼
-MCP server ── 178 tools, resources, prompts, validation, auth
+MCP server ── 201 tools, 16 resources, 17 prompts, background jobs, validation, auth
         │
         ▼
 AI design engine ── brief analysis → plan JSON → validation → compile; critique, revision, variations
@@ -33,7 +33,7 @@ Adobe Illustrator ── ExtendScript ops (illustrator-scripts/*.jsx)
 
 | Area | State |
 |---|---|
-| MCP server (stdio + Streamable HTTP), 178 tools, resources, prompts | Implemented, covered by automated tests |
+| MCP server (stdio + Streamable HTTP), 201 tools, 16 resources, 17 prompts, background jobs | Implemented, covered by automated tests; jobs, resources and production tools verified live on Illustrator 2027 (31.0) |
 | Design engine (planner, 26 templates incl. UI screens, 15 styles, auto layout, UI components, design tokens, UI/UX Pro Max design knowledge, validator, compiler, analyzer, revisions, variations) | Implemented, covered by automated tests |
 | Bridge (queue, timeouts, allowlist, error mapping, COM + AppleScript runners, document pinning) | Implemented; Windows COM verified with Illustrator; macOS AppleScript adapter added |
 | ExtendScript operations inside a real Illustrator | Verified against Illustrator 2026 (30.8) on Windows with `pnpm test:e2e`, `test:e2e:design` and `test:e2e:advanced` (44/44); see [docs/TEST_REPORT.md](docs/TEST_REPORT.md) |
@@ -103,6 +103,7 @@ minimalist layout, beige background, elegant typography and a product image."*
 | `pnpm test:e2e` | Full end-to-end suite against the real Illustrator (closes all open documents without saving) |
 | `pnpm test:e2e:design` / `test:e2e:advanced` / `test:e2e:extended` | Design build + exports / advanced tools (pathfinder, paths, images, artboards, typography, design systems) / extended tools (offset, outline stroke, blends, styles, swatches, symbols, area text, data merge, batch export); use only their own document |
 | `pnpm test:e2e:http` / `test:e2e:reconnect` | HTTP transport / Illustrator quit-and-relaunch |
+| `pnpm test:e2e:jobs` / `test:e2e:resources` / `test:e2e:production` | Background jobs + save/open / live resources and prompts / shapes, layers, print PDF, preflight, cleanup, batch; use only their own documents |
 | `pnpm lint` / `pnpm typecheck` | Static checks |
 | `node scripts/pack-release.mjs` | Build the release package (`release/illustrator-mcp-X.Y.Z.zip`) the installers download |
 | `pnpm --dir site dev` | Run the docs site locally (renders `docs/*.md`) |
@@ -111,8 +112,9 @@ minimalist layout, beige background, elegant typography and a product image."*
 ## Documentation
 
 - **Docs site: https://axcel-blade.github.io/Illustrator-MCP/**
-- [Installation (Windows & macOS)](docs/INSTALLATION.md) — pnpm, Illustrator, Claude Desktop, ChatGPT · [Configuration](docs/CONFIGURATION.md)
+- [Installation (Windows & macOS)](docs/INSTALLATION.md) — pnpm, Illustrator, Claude Desktop, ChatGPT · [Configuration](docs/CONFIGURATION.md) · [Connecting clients](docs/CLIENTS.md) (Claude Code, Cursor, VS Code, ForgePilot, ...)
 - [Architecture](docs/ARCHITECTURE.md)
+- [Supported features](docs/SUPPORTED_FEATURES.md) · [API reference](docs/API_REFERENCE.md) (results, errors, jobs, resources, prompts)
 - [Tool reference](docs/TOOLS.md) (generated) · [Example prompts](docs/EXAMPLES.md)
 - [UI design: auto layout, components, tokens](docs/UI_DESIGN.md)
 - [Design plan schema](docs/DESIGN_SCHEMA.md) · [Coordinate convention](docs/COORDINATES.md)

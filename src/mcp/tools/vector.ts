@@ -4,7 +4,7 @@ import {
   artboardArg, defineTool, fill, fillArg, layerArg, nameArg, op, P, stroke, strokeArg, targetArg, targetsArg, unitsArg, WRITE, type ToolContext,
 } from "./common.js";
 
-const style = {
+export const style = {
   name: nameArg,
   layer: layerArg,
   artboard: artboardArg,
@@ -15,8 +15,8 @@ const style = {
   rotation: z.number().min(-360).max(360).optional(),
 };
 
-type StyleArgs = { name?: string; layer?: string; artboard?: number; fill?: string; stroke?: z.infer<typeof strokeArg>; opacity?: number; rotation?: number };
-const common = (a: StyleArgs) => ({ name: a.name, layer: a.layer, artboard: a.artboard, fill: fill(a.fill), stroke: stroke(a.stroke), opacity: a.opacity, rotation: a.rotation });
+export type StyleArgs = { name?: string; layer?: string; artboard?: number; fill?: string; stroke?: z.infer<typeof strokeArg>; opacity?: number; rotation?: number };
+export const common = (a: StyleArgs) => ({ name: a.name, layer: a.layer, artboard: a.artboard, fill: fill(a.fill), stroke: stroke(a.stroke), opacity: a.opacity, rotation: a.rotation });
 
 /** Catmull-Rom to cubic Bezier: smooth handles for freeform point lists. */
 export function smoothPoints(pts: { x: number; y: number }[], closed: boolean, tension = 0.5): { x: number; y: number; in: [number, number]; out: [number, number] }[] {

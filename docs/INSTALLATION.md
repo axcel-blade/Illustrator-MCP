@@ -104,6 +104,8 @@ Examples: [claude_desktop_config.json](../examples/claude_desktop_config.json) (
 
 Restart Claude Desktop fully (tray / menu bar → Quit). The hammer/tools menu should list the Illustrator tools.
 
+Other clients (Claude Code, Cursor, VS Code, Windsurf, ForgePilot, ...): see [CLIENTS.md](CLIENTS.md).
+
 ## 5. ChatGPT (remote MCP over HTTPS)
 
 ChatGPT connects to **remote** MCP servers only; it cannot launch a local stdio process. Current requirements
@@ -160,6 +162,7 @@ automatically — set variables in the shell, the Claude config `env` block, or 
 | `MCP_SECRET_PATH` | — | Secret URL segment (≥24 chars) → `/mcp/<secret>` |
 | `ILLUSTRATOR_ADAPTER` | `auto` | `auto` picks COM on Windows / AppleScript on macOS; `com`, `applescript`, or `mock` (tests only) |
 | `ILLUSTRATOR_TIMEOUT_MS` | `60000` | Per-operation timeout (design execution uses ≥120 s) |
+| `ILLUSTRATOR_JOB_TIMEOUT_MS` | `900000` | Per-operation timeout inside background jobs (`background: true`) |
 | `ILLUSTRATOR_AUTO_LAUNCH` | `true` | Allow the bridge to start Illustrator |
 | `ALLOWED_PATHS` | `output;~/Documents/IllustratorMCP` | `;`-separated sandbox roots for all file I/O (same separator on both OSes) |
 | `LOG_LEVEL` / `LOG_DIR` | `info` / `logs` | JSON logs to stderr and `logs/mcp-YYYY-MM-DD.log` |

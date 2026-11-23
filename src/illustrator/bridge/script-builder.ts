@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { PROJECT_ROOT } from "../../config/index.js";
 
 export const SCRIPT_DIR = join(PROJECT_ROOT, "illustrator-scripts");
-const MODULES = ["bootstrap.jsx", "document.jsx", "shapes.jsx", "typography.jsx", "objects.jsx", "layers.jsx", "export.jsx", "design.jsx", "advanced.jsx", "extended.jsx"];
+const MODULES = ["bootstrap.jsx", "document.jsx", "shapes.jsx", "typography.jsx", "objects.jsx", "layers.jsx", "export.jsx", "design.jsx", "advanced.jsx", "extended.jsx", "production.jsx"];
 
 /**
  * Operations the JSX layer implements. The bridge refuses anything else before Illustrator
@@ -29,6 +29,8 @@ export const ALLOWED_OPS = new Set([
   "offset_path", "outline_stroke", "expand_objects", "create_blend", "release_blend", "release_clipping_mask", "release_compound_path",
   "create_text_style", "apply_text_style", "list_styles", "apply_graphic_style", "apply_brush", "create_spot_color", "create_swatch_group", "list_swatches", "place_symbol",
   "create_area_text", "thread_text_frames", "set_text_columns", "set_text_attributes", "find_replace_text",
+  "shear_objects", "select_all", "get_object_properties", "duplicate_layer", "create_sublayer", "get_document_settings", "set_raster_effects_resolution",
+  "export_tiff", "export_selection", "export_print_pdf", "preflight_document", "cleanup_document",
   "run_action", "fit_artboard_to_artwork", "bind_variable", "list_variables", "capture_dataset", "apply_dataset", "print_document",
 ]);
 

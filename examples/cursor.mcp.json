@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "illustrator": {
+      "command": "node",
+      "args": ["C:\\path\\to\\Illustrator-MCP\\dist\\index.js"],
+      "env": {
+        "ILLUSTRATOR_ADAPTER": "com",
+        "ALLOWED_PATHS": "C:\\Users\\you\\Documents\\IllustratorMCP"
+      }
+    }
+  }
+}

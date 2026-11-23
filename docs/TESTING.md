@@ -24,6 +24,9 @@ Runs in CI or on any machine; no Illustrator needed. Files in `tests/unit/`:
 | `pnpm test:e2e:design` | Builds a complete design, saves `.ai`, exports SVG/PNG/PDF | Its own document only |
 | `pnpm test:e2e:advanced` | Pathfinder, anchor editing, split/join/simplify, undo/redo, artboards, documents, typography roles, design systems, image info/relink/trace (needs `test-output/illustrator-mcp-test.png` from `test:e2e:design`) | Its own document only |
 | `pnpm test:e2e:http` / `test:e2e:reconnect` | Streamable HTTP with auth / Illustrator quit and relaunch | — |
+| `pnpm test:e2e:jobs` | Background job for a 162-element plan, `save_file` (.ai/.pdf/in place), `open_file` | Own document only |
+| `pnpm test:e2e:resources` | Every `illustrator://` resource and every prompt | Own document only |
+| `pnpm test:e2e:production` | P4 tools: shapes, shear, layers, settings, TIFF/selection/print-PDF export, preflight, cleanup, batch, report | Own document only |
 
 Each step passes only after the result is read back from Illustrator or found on disk.
 
