@@ -25,6 +25,8 @@ MCP.ops.execute_plan = function (a) {
   var doc;
   if (a.newDocument) doc = app.documents.add(a.colorMode === "CMYK" ? DocumentColorSpace.CMYK : DocumentColorSpace.RGB, a.width, a.height);
   else doc = MCP.doc();
+  /* Pin the target so helpers that call MCP.doc() draw here, not into the previously pinned document. */
+  MCP.pinned = doc;
   MCP.useArtboard(doc, 0);
   if (!a.newDocument) {
     var r = doc.artboards[0].artboardRect;

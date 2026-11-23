@@ -1,6 +1,6 @@
 # MCP tool reference
 
-Generated from the server (178 tools) by `node scripts/gen-docs.mjs`. Coordinates follow [COORDINATES.md](COORDINATES.md).
+Generated from the server (208 tools) by `node scripts/gen-docs.mjs`. Coordinates follow [COORDINATES.md](COORDINATES.md).
 
 ## `illustrator_status`
 
@@ -60,6 +60,88 @@ Save the active document as a native editable .ai file inside an allowed directo
 | `pdfCompatible` | boolean |  |
 | `embedLinkedFiles` | boolean |  |
 | `embedICCProfile` | boolean |  |
+
+## `save_file`
+
+Save the active document. Without a path, saves in place (the document must already have a file). With a path, saves as an editable native file whose format follows the extension: .ai, .pdf (Illustrator-editable) or .eps (for a template .ait use save_copy). The open document is re-targeted to the new file. Existing files are not overwritten unless overwrite: true.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` | string | Target path (relative paths resolve inside the output directory); omit to save in place |
+| `overwrite` | boolean |  |
+| `pdfCompatible` | boolean | .ai: embed PDF content; .pdf: preserve Illustrator editing capabilities |
+| `embedLinkedFiles` | boolean |  |
+| `embedICCProfile` | boolean |  |
+
+## `open_file`
+
+Open a file from an allowed directory in Illustrator: native/vector files (.ai, .ait, .pdf, .eps, .svg, .svgz, .dxf, .dwg) or images (.png, .jpg, .jpeg, .tif, .tiff, .gif, .bmp, .psd), which open as new documents. If the file is already open its document is activated instead, unless reopen: true. Subsequent operations target the opened document.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string |  |
+| `reopen` | boolean | Open a second copy even if the file is already open |
+
+## `save_copy`
+
+Save a copy of the active document (File > Save a Copy) as .ai, .pdf (editable), .eps or a template (.ait, File > Save as Template). The open document keeps pointing at its own file. The document must already be saved, with no unsaved changes.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string | Copy path (relative paths resolve inside the output directory) |
+| `overwrite` | boolean |  |
+| `pdfCompatible` | boolean |  |
+| `embedLinkedFiles` | boolean |  |
+
+## `save_all_documents`
+
+Save every open document that has a file and unsaved changes (File > Save All). Documents that were never saved are listed as skipped.
+
+## `revert_document`
+
+Revert the active document to its last saved version (File > Revert). Unsaved changes are lost, so it requires confirm: true.
+
+> Destructive — requires `confirm: true`.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `confirm` | boolean |  |
+
+## `close_all_documents`
+
+Close all open documents (File > Close All), optionally keeping some open. mode: save saves changed documents first (refuses if one was never saved); mode: discard closes without saving and requires confirm: true.
+
+> Destructive — requires `confirm: true`.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `mode` * | string |  |
+| `except` | array | Document names to keep open |
+| `confirm` | boolean |  |
+
+## `list_recent_files`
+
+List Illustrator's recent files (File > Open Recent Files), newest first, with whether each still exists. Open one with open_recent_file or open_file.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `limit` | integer |  |
+
+## `open_recent_file`
+
+Open a file from Illustrator's recent-files list by its index from list_recent_files. The file must still be inside an allowed directory.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `index` * | integer |  |
+
+## `new_from_template`
+
+Create a new untitled document from an Illustrator template (.ait) (File > New from Template). The template file itself is not changed.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string |  |
 
 ## `inspect_document`
 
@@ -1043,7 +1125,7 @@ Export to EPS (same save-first rule as export_pdf).
 
 ## `export_multiple_formats`
 
-Export the active document to several formats sharing a base path (extension added per format). Each format is reported individually; one failure does not hide others.
+Export the active document to several formats sharing a base path (extension added per format). Each format is reported individually; one failure does not hide others. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1052,6 +1134,7 @@ Export the active document to several formats sharing a base path (extension add
 | `ppi` | number |  |
 | `overwrite` | boolean |  |
 | `allowRetarget` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `generate_export_preview`
 
@@ -1127,7 +1210,7 @@ Validate a design plan against the schema plus semantic rules (layer references,
 
 ## `execute_design_plan`
 
-Execute a stored plan (planId) or an inline plan in Illustrator: creates a new document with layers and editable objects, verifies the result by inspection, and attaches a preview.
+Execute a stored plan (planId) or an inline plan in Illustrator: creates a new document with layers and editable objects, verifies the result by inspection, and attaches a preview. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1137,6 +1220,7 @@ Execute a stored plan (planId) or an inline plan in Illustrator: creates a new d
 | `preview` | boolean |  |
 | `saveAs` | string |  |
 | `overwrite` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `get_design_plan`
 
@@ -1159,7 +1243,7 @@ Diff two versions of a stored plan: added/removed/changed elements, palette and 
 
 ## `generate_design`
 
-Full pipeline from a brief: analyze requirements (category, audience, style, size), plan hierarchy/palette/typography/layers, validate, build editable artwork in Illustrator, verify by inspection and return a preview.
+Full pipeline from a brief: analyze requirements (category, audience, style, size), plan hierarchy/palette/typography/layers, validate, build editable artwork in Illustrator, verify by inspection and return a preview. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1178,10 +1262,11 @@ Full pipeline from a brief: analyze requirements (category, audience, style, siz
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
 | `category` | string |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_logo`
 
-Create a minimalist logo lockup (mark, wordmark, tagline) as editable vectors. Same options as generate_design.
+Create a minimalist logo lockup (mark, wordmark, tagline) as editable vectors. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1199,10 +1284,11 @@ Create a minimalist logo lockup (mark, wordmark, tagline) as editable vectors. S
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_poster`
 
-Create a poster with hero image area, headline hierarchy and footer CTA. Same options as generate_design.
+Create a poster with hero image area, headline hierarchy and footer CTA. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1220,10 +1306,11 @@ Create a poster with hero image area, headline hierarchy and footer CTA. Same op
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_flyer`
 
-Create a flyer with color block, headline, offer list and CTA button. Same options as generate_design.
+Create a flyer with color block, headline, offer list and CTA button. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1241,10 +1328,11 @@ Create a flyer with color block, headline, offer list and CTA button. Same optio
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_social_media_graphic`
 
-Create a social media graphic (default 1080×1080 px). Same options as generate_design.
+Create a social media graphic (default 1080×1080 px). Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1262,10 +1350,11 @@ Create a social media graphic (default 1080×1080 px). Same options as generate_
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_business_card`
 
-Create a business card front (85×55 mm, CMYK). Same options as generate_design.
+Create a business card front (85×55 mm, CMYK). Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1283,10 +1372,11 @@ Create a business card front (85×55 mm, CMYK). Same options as generate_design.
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_brand_identity`
 
-Create a brand identity board: logo lockup, palette swatches with hex labels, type specimens. Same options as generate_design.
+Create a brand identity board: logo lockup, palette swatches with hex labels, type specimens. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1304,10 +1394,11 @@ Create a brand identity board: logo lockup, palette swatches with hex labels, ty
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_packaging_design`
 
-Create a flat packaging layout with panels, dieline layer and front artwork. Same options as generate_design.
+Create a flat packaging layout with panels, dieline layer and front artwork. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1325,10 +1416,11 @@ Create a flat packaging layout with panels, dieline layer and front artwork. Sam
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_infographic`
 
-Create an infographic with numbered stat rows and bars. Pass copy.items as the data labels. Same options as generate_design.
+Create an infographic with numbered stat rows and bars. Pass copy.items as the data labels. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1346,10 +1438,11 @@ Create an infographic with numbered stat rows and bars. Pass copy.items as the d
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_icon_set`
 
-Create a consistent geometric icon set on shared keylines. Pass copy.items as icon labels. Same options as generate_design.
+Create a consistent geometric icon set on shared keylines. Pass copy.items as icon labels. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1367,10 +1460,11 @@ Create a consistent geometric icon set on shared keylines. Pass copy.items as ic
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_vector_illustration`
 
-Create a layered flat vector illustration (landscape scene). Same options as generate_design.
+Create a layered flat vector illustration (landscape scene). Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1388,10 +1482,11 @@ Create a layered flat vector illustration (landscape scene). Same options as gen
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_editorial_layout`
 
-Create an editorial magazine page with kicker, title, deck, columns and pull quote. Same options as generate_design.
+Create an editorial magazine page with kicker, title, deck, columns and pull quote. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1409,10 +1504,11 @@ Create an editorial magazine page with kicker, title, deck, columns and pull quo
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_app_screen`
 
-Create a mobile app screen (393×852-class frame) in auto layout with UI components: home/dashboard by default; the brief picks login/sign-up or settings screens. Pass copy.items for list rows. Same options as generate_design.
+Create a mobile app screen (393×852-class frame) in auto layout with UI components: home/dashboard by default; the brief picks login/sign-up or settings screens. Pass copy.items for list rows. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1430,10 +1526,11 @@ Create a mobile app screen (393×852-class frame) in auto layout with UI compone
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_landing_page`
 
-Create a desktop website landing page: navbar, hero with CTAs and visual, feature cards. Pass copy.items as feature titles. Same options as generate_design.
+Create a desktop website landing page: navbar, hero with CTAs and visual, feature cards. Pass copy.items as feature titles. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1451,10 +1548,11 @@ Create a desktop website landing page: navbar, hero with CTAs and visual, featur
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_web_dashboard`
 
-Create a web app dashboard: sidebar nav, header with search, KPI tiles, chart and activity list. Pass copy.items as nav labels. Same options as generate_design.
+Create a web app dashboard: sidebar nav, header with search, KPI tiles, chart and activity list. Pass copy.items as nav labels. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1472,10 +1570,11 @@ Create a web app dashboard: sidebar nav, header with search, KPI tiles, chart an
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `create_ui_kit`
 
-Create a design-system sheet: color tokens, type scale, buttons, inputs, controls, cards, list rows — all themed by style/palette. Same options as generate_design.
+Create a design-system sheet: color tokens, type scale, buttons, inputs, controls, cards, list rows — all themed by style/palette. Same options as generate_design. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1493,10 +1592,11 @@ Create a design-system sheet: color tokens, type scale, buttons, inputs, control
 | `execute` | boolean | false = return the plan only |
 | `preview` | boolean | Export and attach a PNG preview after execution |
 | `saveAs` | string | Save the result as this .ai path |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `revise_design`
 
-Apply targeted revisions to an executed plan without rebuilding: structured updates by element name, additions, removals, palette role changes, and simple instructions ("make the headline bigger", "change background to navy", "move logo up"). Unparsed instructions are reported, not guessed.
+Apply targeted revisions to an executed plan without rebuilding: structured updates by element name, additions, removals, palette role changes, and simple instructions ("make the headline bigger", "change background to navy", "move logo up"). Unparsed instructions are reported, not guessed. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1508,6 +1608,7 @@ Apply targeted revisions to an executed plan without rebuilding: structured upda
 | `palette` | object |  |
 | `apply` | boolean |  |
 | `preview` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `analyze_composition`
 
@@ -1528,7 +1629,7 @@ Critique the active design: verified property analysis plus an actual exported p
 
 ## `improve_design`
 
-Apply the automatic fixes suggested by analyze_composition (margins, alignment snaps, contrast, minimum size, hierarchy) as targeted edits, then re-analyze and report before/after scores. Use dryRun to preview the changes.
+Apply the automatic fixes suggested by analyze_composition (margins, alignment snaps, contrast, minimum size, hierarchy) as targeted edits, then re-analyze and report before/after scores. Use dryRun to preview the changes. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1537,10 +1638,11 @@ Apply the automatic fixes suggested by analyze_composition (margins, alignment s
 | `dryRun` | boolean |  |
 | `preview` | boolean |  |
 | `artboard` | integer |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `generate_design_variations`
 
-Generate N variations of a brief by changing one dimension each (style, palette harmony, or layout). Returns plans; with execute: true each is built as its own document with a preview.
+Generate N variations of a brief by changing one dimension each (style, palette harmony, or layout). Returns plans; with execute: true each is built as its own document with a preview. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1560,6 +1662,7 @@ Generate N variations of a brief by changing one dimension each (style, palette 
 | `saveAs` | string | Save the result as this .ai path |
 | `count` | integer |  |
 | `dimension` | string |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `search_design_knowledge`
 
@@ -1597,7 +1700,7 @@ Design system for a style: color roles (incl. AA-safe 'subtle' text color), typo
 
 ## `create_ui_design`
 
-Build a UI screen from an auto-layout tree (Figma-style frames: stacks with gap/padding/alignment, fill/hug sizing, components and design tokens). The server measures and positions everything, validates contrast, then builds editable artwork in Illustrator with a preview. Call list_ui_components first for the node and component reference. execute: false returns the computed plan only.
+Build a UI screen from an auto-layout tree (Figma-style frames: stacks with gap/padding/alignment, fill/hug sizing, components and design tokens). The server measures and positions everything, validates contrast, then builds editable artwork in Illustrator with a preview. Call list_ui_components first for the node and component reference. execute: false returns the computed plan only. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1616,6 +1719,7 @@ Build a UI screen from an auto-layout tree (Figma-style frames: stacks with gap/
 | `execute` | boolean |  |
 | `preview` | boolean |  |
 | `saveAs` | string |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `rename_layers_semantically`
 
@@ -1836,7 +1940,7 @@ Read a stored design system by name.
 
 ## `apply_design_system`
 
-Apply a stored design system to the active document: adds its palette as a swatch group and applies its typography roles to matching text. Recolor specific objects afterwards with apply_color_palette using the returned palette.
+Apply a stored design system to the active document: adds its palette as a swatch group and applies its typography roles to matching text. Recolor specific objects afterwards with apply_color_palette using the returned palette. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -1844,6 +1948,7 @@ Apply a stored design system to the active document: adds its palette as a swatc
 | `swatches` | boolean |  |
 | `typography` | boolean |  |
 | `dryRun` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `offset_path`
 
@@ -2089,7 +2194,7 @@ Resize an artboard to fit its artwork (or the given targets), with optional padd
 
 ## `export_artboards`
 
-Batch-export every artboard (or listed ones) to separate files in a folder, one file per artboard per format, named <prefix>-<artboard name>.<ext>.
+Batch-export every artboard (or listed ones) to separate files in a folder, one file per artboard per format, named <prefix>-<artboard name>.<ext>. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -2099,10 +2204,11 @@ Batch-export every artboard (or listed ones) to separate files in a folder, one 
 | `artboards` | array |  |
 | `ppi` | number |  |
 | `overwrite` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `data_merge_export`
 
-Data merge: for each row, set named text frames' contents (row keys = text object names), export a PNG/JPG/PDF per row, then restore the original text.
+Data merge: for each row, set named text frames' contents (row keys = text object names), export a PNG/JPG/PDF per row, then restore the original text. Supports background: true for long runs (returns a jobId; poll get_job).
 
 | Parameter | Type | Notes |
 |---|---|---|
@@ -2112,6 +2218,7 @@ Data merge: for each row, set named text frames' contents (row keys = text objec
 | `format` | string |  |
 | `ppi` | number |  |
 | `overwrite` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
 
 ## `bind_variable`
 
@@ -2152,3 +2259,254 @@ Print the active document to a printer (physical output). Ask the user first and
 | `printer` | string |  |
 | `copies` | integer |  |
 | `confirm` | boolean |  |
+
+## `draw_triangle`
+
+Draw a triangle inside a box (x/y = top-left, y down): isosceles (apex top-center), right (right angle bottom-left) or equilateral (height derived from width).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `kind` | string |  |
+| `x` * | number |  |
+| `y` * | number |  |
+| `width` * | number |  |
+| `height` | number |  |
+| `name` | string | Object name, used later to target it |
+| `layer` | string | Target layer name (created if missing) |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+| `fill` | union | Hex fill or "none" (default gray for closed shapes) |
+| `stroke` | union |  |
+| `opacity` | number |  |
+| `rotation` | number |  |
+
+## `draw_arc`
+
+Draw an elliptical arc as true Bezier curves. Angles in degrees, clockwise from 3 o'clock (y down). closure: open (stroke only), pie (closed to the center) or chord.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `cx` * | number |  |
+| `cy` * | number |  |
+| `radius` * | number |  |
+| `radiusY` | number |  |
+| `startAngle` * | number |  |
+| `endAngle` * | number |  |
+| `closure` | string |  |
+| `name` | string | Object name, used later to target it |
+| `layer` | string | Target layer name (created if missing) |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+| `fill` | union | Hex fill or "none" (default gray for closed shapes) |
+| `stroke` | union |  |
+| `opacity` | number |  |
+| `rotation` | number |  |
+
+## `draw_spiral`
+
+Draw an Archimedean spiral (open smooth path) around cx/cy from innerRadius to outerRadius over the given number of turns.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `cx` * | number |  |
+| `cy` * | number |  |
+| `outerRadius` * | number |  |
+| `innerRadius` | number |  |
+| `turns` | number |  |
+| `clockwise` | boolean |  |
+| `name` | string | Object name, used later to target it |
+| `layer` | string | Target layer name (created if missing) |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+| `fill` | union | Hex fill or "none" (default gray for closed shapes) |
+| `stroke` | union |  |
+| `opacity` | number |  |
+| `rotation` | number |  |
+
+## `shear_objects`
+
+Shear (skew) objects about their centers. angleX slants vertical edges (positive leans the top right); angleY slants horizontal edges.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `targets` | array | Multiple object references; defaults to current selection |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `angleX` | number |  |
+| `angleY` | number |  |
+
+## `select_all`
+
+Select every unlocked, visible object (or only those on one artboard), or clear the selection with deselect: true.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `deselect` | boolean |  |
+| `activeArtboardOnly` | boolean |  |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+
+## `get_object_properties`
+
+Full verified properties of objects: bounds, fill/stroke, text attributes, parent layer, stacking position, path area/length and transformation matrix where Illustrator exposes one.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `targets` | array | Multiple object references; defaults to current selection |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `deep` | boolean | Include group children |
+
+## `duplicate_layer`
+
+Duplicate a layer with all its objects and sublayers, placed directly above the original.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `name` * | string |  |
+| `newName` | string |  |
+
+## `create_sublayer`
+
+Create a sublayer inside an existing layer.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `parent` * | string |  |
+| `name` * | string |  |
+| `position` | string |  |
+
+## `get_document_settings`
+
+Document settings: color mode, color profile, ruler units and origin, raster effects resolution, artboards and object counts.
+
+## `set_raster_effects_resolution`
+
+Set Document Raster Effects resolution (ppi) used for shadows, blurs and other raster effects; 300 for print. Verified by reading it back.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `resolution` * | integer |  |
+
+## `export_tiff`
+
+Export artboards to TIFF (RGB, CMYK or grayscale) at the given resolution. Multiple artboards get numbered files. Supports background: true for long runs (returns a jobId; poll get_job).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string |  |
+| `overwrite` | boolean |  |
+| `ppi` | number |  |
+| `colorSpace` | string |  |
+| `lzw` | boolean |  |
+| `artboards` | string | Range like '1-3,5' (1-based); default all |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
+
+## `export_selection`
+
+Export only the given objects (or the selection) to PNG or SVG, cropped to their bounds plus padding. Uses a temporary document that is closed without saving; the original is untouched.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `target` | union | Object reference: "selection" or {name, layer?} / {uuid} |
+| `targets` | array | Multiple object references; defaults to current selection |
+| `artboard` | integer | Artboard index used as the coordinate origin (default: active) |
+| `path` * | string |  |
+| `overwrite` | boolean |  |
+| `format` | string |  |
+| `ppi` | number |  |
+| `transparent` | boolean |  |
+| `padding` | number |  |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+
+## `export_print_pdf`
+
+Export a print-ready PDF: PDF/X preset (default [PDF/X-4:2008]), bleed and crop marks, optional registration marks, color bars and page info. Written as a copy; a saved .ai stays the working file (same save-first rule as export_pdf). Run preflight_document first. Supports background: true for long runs (returns a jobId; poll get_job).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `path` * | string |  |
+| `overwrite` | boolean |  |
+| `preset` | string |  |
+| `bleed` | number | Bleed on every side, in `units` (default mm) |
+| `units` | string | Units for coordinates/sizes in this call (default: session units, initially pt) |
+| `cropMarks` | boolean |  |
+| `registrationMarks` | boolean |  |
+| `colorBars` | boolean |  |
+| `pageInfo` | boolean |  |
+| `artboards` | string | Range like '1-3,5' (1-based); default all |
+| `allowRetarget` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
+
+## `preflight_document`
+
+Read-only production check: stray points, unpainted paths, hairlines, small or overset text, missing fonts and links, low-resolution images, RGB colors in CMYK documents, empty and hidden layers. Returns issues by severity; passed is false when any error is found. Supports background: true for long runs (returns a jobId; poll get_job).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `forPrint` | boolean |  |
+| `minTextSize` | number |  |
+| `minStrokeWidth` | number |  |
+| `minPpi` | integer |  |
+| `limit` | integer |  |
+| `maxIssues` | integer |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
+
+## `cleanup_document`
+
+Remove stray anchor points, empty text frames, unpainted paths and empty layers (locked/hidden items are left alone). dryRun (default) only lists candidates; removing requires dryRun: false and confirm: true.
+
+> Destructive — requires `confirm: true`.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `remove` | array |  |
+| `dryRun` | boolean |  |
+| `confirm` | boolean |  |
+
+## `batch_operation`
+
+Run a list of tool calls in order in one request ({ tool, args } each; any tool except batch/job tools). Each step is validated like a direct call and keeps its own confirm rules. Stops at the first failure unless continueOnError. Supports background: true for long runs (returns a jobId; poll get_job).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `steps` * | array |  |
+| `continueOnError` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
+
+## `generate_design_report`
+
+Summary report of the active document for review or handoff: settings, layers, fonts, swatches, linked assets and preflight issues, as structured data plus Markdown. Supports background: true for long runs (returns a jobId; poll get_job).
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `forPrint` | boolean |  |
+| `background` | boolean | Run as a background job: returns a jobId immediately instead of waiting. Use for large designs or batch exports, then poll get_job / wait_for_job. |
+
+## `get_job`
+
+Status of a background job (queued | running | succeeded | failed | cancelled). When it has succeeded, also returns the tool's full result, including any preview image.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `jobId` * | string | Id returned by a tool called with background: true |
+
+## `wait_for_job`
+
+Wait up to timeoutSeconds for a background job to finish, then return it as get_job does. If it is still running, call again; the job keeps going either way.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `jobId` * | string | Id returned by a tool called with background: true |
+| `timeoutSeconds` | integer |  |
+
+## `list_jobs`
+
+List recent background jobs, newest first (results omitted; use get_job).
+
+## `cancel_job`
+
+Cancel a queued background job. A job already running inside Illustrator cannot be interrupted; the result says so.
+
+| Parameter | Type | Notes |
+|---|---|---|
+| `jobId` * | string | Id returned by a tool called with background: true |

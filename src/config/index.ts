@@ -13,6 +13,7 @@ const EnvSchema = z.object({
   MCP_SECRET_PATH: z.string().optional(),
   ILLUSTRATOR_ADAPTER: z.enum(["auto", "com", "applescript", "mock"]).default("auto"),
   ILLUSTRATOR_TIMEOUT_MS: z.coerce.number().int().min(1000).max(600000).default(60000),
+  ILLUSTRATOR_JOB_TIMEOUT_MS: z.coerce.number().int().min(10000).max(3600000).default(900000),
   ILLUSTRATOR_AUTO_LAUNCH: z
     .string()
     .default("true")
@@ -27,7 +28,7 @@ export type IllustratorAdapterKind = "auto" | "com" | "applescript" | "mock";
 export interface AppConfig {
   transport: "stdio" | "http";
   http: { host: string; port: number; authToken?: string; secretPath?: string };
-  illustrator: { adapter: IllustratorAdapterKind; timeoutMs: number; autoLaunch: boolean };
+  illustrator: { adapter: IllustratorAdapterKind; timeoutMs: number; jobTimeoutMs: number; autoLaunch: boolean };
   allowedPaths: string[];
   outputDir: string;
   logLevel: string;
@@ -83,6 +84,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env, argv: string[] 
     illustrator: {
       adapter: parsed.ILLUSTRATOR_ADAPTER,
       timeoutMs: parsed.ILLUSTRATOR_TIMEOUT_MS,
+      jobTimeoutMs: parsed.ILLUSTRATOR_JOB_TIMEOUT_MS,
       autoLaunch: parsed.ILLUSTRATOR_AUTO_LAUNCH,
     },
     allowedPaths,

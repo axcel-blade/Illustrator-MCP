@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { PROJECT_ROOT, type AppConfig } from "./config/index.js";
 import { PlanStore } from "./design-engine/plan-store.js";
+import { JobManager } from "./jobs/job-manager.js";
 import { AppleScriptAdapter } from "./illustrator/bridge/applescript-adapter.js";
 import { IllustratorBridge } from "./illustrator/bridge/bridge.js";
 import { ComAdapter } from "./illustrator/bridge/com-adapter.js";
@@ -18,6 +19,8 @@ import { registerDesignTools } from "./mcp/tools/design.js";
 import { registerExtendedTools } from "./mcp/tools/extended.js";
 import { registerDocumentTools } from "./mcp/tools/document.js";
 import { registerExportTools } from "./mcp/tools/export.js";
+import { registerJobTools } from "./mcp/tools/jobs.js";
+import { registerProductionTools } from "./mcp/tools/production.js";
 import { registerLayerTools } from "./mcp/tools/layers.js";
 import { registerLayoutTools } from "./mcp/tools/layout.js";
 import { registerObjectTools } from "./mcp/tools/objects.js";
@@ -50,6 +53,7 @@ export function createContext(config: AppConfig, adapter: BridgeAdapter = create
     config,
     paths: new PathPolicy(config.allowedPaths),
     plans: new PlanStore(join(config.outputDir, "plans")),
+    jobs: new JobManager(),
     session: { units: "pt" },
   };
 }
@@ -60,7 +64,7 @@ export function createServer(ctx: ToolContext): McpServer {
     instructions:
       "Controls Adobe Illustrator. Coordinates: origin at the artboard's top-left, x right, y DOWN; points unless `units` is given. " +
       "Every result states its source (illustrator | mock | server). Never claim visual inspection unless a tool returned a preview image. " +
-      "Destructive tools need confirm: true after asking the user. Ops target the document the server last worked on; use list_documents / activate_document to switch. Start with illustrator_status.",
+      "Destructive tools need confirm: true after asking the user. Ops target the document the server last worked on; use list_documents / activate_document to switch. Large designs and batch exports accept background: true and return a jobId; collect results with wait_for_job. Start with illustrator_status.",
   });
   registerDocumentTools(server, ctx);
   registerVectorTools(server, ctx);
@@ -75,6 +79,8 @@ export function createServer(ctx: ToolContext): McpServer {
   registerUiTools(server, ctx);
   registerAdvancedTools(server, ctx);
   registerExtendedTools(server, ctx);
+  registerProductionTools(server, ctx);
+  registerJobTools(server, ctx);
   registerResources(server, ctx);
   registerPrompts(server);
   return server;

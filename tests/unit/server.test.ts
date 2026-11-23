@@ -8,7 +8,7 @@ import { loadConfig } from "../../src/config/index.js";
 import { MockAdapter } from "../../src/illustrator/bridge/mock-adapter.js";
 import { createContext, createServer } from "../../src/server.js";
 
-const REQUIRED_TOOLS = `illustrator_status create_document open_document close_document save_document save_document_as inspect_document get_artboards create_artboard resize_artboard set_document_units set_document_color_mode
+const REQUIRED_TOOLS = `illustrator_status create_document open_document close_document save_document save_document_as save_file open_file inspect_document get_artboards create_artboard resize_artboard set_document_units set_document_color_mode
 draw_rectangle draw_circle draw_ellipse draw_polygon draw_star draw_line draw_pen_path draw_freeform_path create_compound_path create_clipping_mask create_symbol create_pattern
 add_text edit_text set_font set_font_size set_font_weight set_text_color set_paragraph_alignment set_character_spacing set_line_spacing create_text_on_path convert_text_to_outlines inspect_fonts
 set_fill_color set_gradient set_stroke set_opacity set_blend_mode apply_shadow apply_blur apply_appearance create_color_palette create_color_swatches apply_color_palette
@@ -126,6 +126,19 @@ describe("MCP server", () => {
     expect((await call("save_document_as", { path: "taken.ai" })).body.error.code).toBe("FILE_EXISTS");
     expect((await call("save_document_as", { path: "notes.txt" })).body.error.code).toBe("VALIDATION_ERROR");
     expect((await call("place_image", { path: "missing.png" })).body.error.code).toBe("FILE_NOT_FOUND");
+  });
+
+  it("save_file / open_file validate paths and pick the format from the extension", async () => {
+    expect((await call("save_file", { path: "C:\\Windows\\evil.pdf" })).body.error.code).toBe("PATH_NOT_ALLOWED");
+    expect((await call("save_file", { path: "taken.ai" })).body.error.code).toBe("FILE_EXISTS");
+    expect((await call("save_file", { path: "brand.svg" })).body.error.code).toBe("VALIDATION_ERROR");
+    const pdf = await call("save_file", { path: "brand.pdf" });
+    expect(pdf.body.ok).toBe(true);
+    expect(pdf.body.data.echo.format).toBe("pdf");
+    expect((await call("open_file", { path: "missing.png" })).body.error.code).toBe("FILE_NOT_FOUND");
+    expect((await call("open_file", { path: "notes.txt" })).body.error.code).toBe("VALIDATION_ERROR");
+    writeFileSync(join(outDir, "logo.png"), "x");
+    expect((await call("open_file", { path: "logo.png" })).body.ok).toBe(true);
   });
 
   it("propagates Illustrator errors truthfully", async () => {

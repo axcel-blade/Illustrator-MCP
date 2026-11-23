@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Added
+- `save_file` (in place, or as .ai/.ait/editable .pdf/.eps by extension) and `open_file` (vector formats and images; activates a file that is already open).
+- File menu: `save_copy` (Save a Copy, incl. Save as Template .ait), `save_all_documents`, `close_all_documents` (save or discard, with exceptions), `revert_document`, `list_recent_files`, `open_recent_file`, `new_from_template`; verified live by `test:e2e:file-menu` (16/16).
+- Background jobs: 30 long-running tools accept `background: true` and return a `jobId` at once; collect results with `get_job`, `wait_for_job`, `list_jobs`, `cancel_job`. New `ILLUSTRATOR_JOB_TIMEOUT_MS` (default 15 min) for calls inside jobs.
+- Live resources: `illustrator://status`, `documents`, `active-document`, `selection`, `artboards`, `layers`, `colors`, `fonts`, `brushes`, `linked-assets`, `capabilities`.
+- 14 prompt templates: logo, corporate identity, brand guidelines, business card, poster, vector and character illustration, packaging, seamless pattern, infographic, icon library, fashion technical drawing, print preparation, document audit.
+- 17 tools: `draw_triangle`, `draw_arc`, `draw_spiral`, `shear_objects`, `select_all`, `get_object_properties`, `duplicate_layer`, `create_sublayer`, `get_document_settings`, `set_raster_effects_resolution`, `export_tiff`, `export_selection`, `export_print_pdf` (PDF/X, bleed, marks), `preflight_document`, `cleanup_document`, `batch_operation`, `generate_design_report`.
+- Live suites `test:e2e:jobs`, `test:e2e:resources`, `test:e2e:production` (all passing on Illustrator 2027 / 31.0).
+- Docs: `SUPPORTED_FEATURES.md`, `API_REFERENCE.md`, `CLIENTS.md` (Claude Desktop, Claude Code, Cursor, VS Code, Windsurf, Gemini CLI, Codex, ForgePilot/other clients), `GAP_ANALYSIS.md`; example configs for Cursor, VS Code and project `.mcp.json`.
+
+### Fixed
+- `execute_design_plan` drew elements into the previously targeted document instead of the new one it created.
+- Garbled dash characters in the built-in prompt texts.
+- `save_file` no longer accepts `.ait`: Illustrator always writes the open document as `.ai`, so the template ended up as `name.ai`. Templates are saved with `save_copy`.
+
 ## 1.1.1 — 2026-11-23
 
 ### Fixed

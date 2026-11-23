@@ -99,6 +99,166 @@ MCP.ops.save_document_as = function (a) {
   return MCP.docInfo(doc);
 };
 
+/* Save the active document. Without a path it saves in place; with a path it re-targets the
+   document to that file, choosing native save options from the extension (.ai/.ait/.pdf/.eps). */
+MCP.ops.save_file = function (a) {
+  var doc = MCP.doc();
+  if (!a.path) {
+    var hasPath = false;
+    try { hasPath = doc.fullName && doc.fullName.exists; } catch (e) { hasPath = false; }
+    if (!hasPath) MCP.fail("VALIDATION_ERROR", "Document has never been saved; pass a path.");
+    doc.save();
+    var info0 = MCP.docInfo(doc); info0.format = "in-place"; return info0;
+  }
+  var fmt = a.format, opts;
+  if (fmt === "pdf") {
+    opts = new PDFSaveOptions();
+    opts.preserveEditability = a.pdfCompatible !== false;
+    opts.viewAfterSaving = false;
+  } else if (fmt === "eps") {
+    opts = new EPSSaveOptions();
+    opts.embedLinkedFiles = !!a.embedLinkedFiles;
+  } else {
+    opts = new IllustratorSaveOptions();
+    opts.pdfCompatible = a.pdfCompatible !== false;
+    opts.embedICCProfile = !!a.embedICCProfile;
+    opts.embedLinkedFiles = !!a.embedLinkedFiles;
+    opts.fontSubsetThreshold = 100;
+  }
+  doc.saveAs(new File(a.path), opts);
+  if (!new File(a.path).exists) MCP.fail("ILLUSTRATOR_SCRIPT_ERROR", "Illustrator reported no error but the file was not written: " + a.path);
+  MCP.pinned = doc;
+  var info = MCP.docInfo(doc); info.format = fmt; info.savedTo = a.path; return info;
+};
+
+/* Open any file Illustrator can read. If the file is already open, activate that document instead. */
+MCP.ops.open_file = function (a) {
+  var f = new File(a.path);
+  if (!f.exists) MCP.fail("FILE_NOT_FOUND", "File not found: " + a.path);
+  var target = String(f.fsName).toLowerCase();
+  for (var i = 0; i < app.documents.length; i++) {
+    var d = app.documents[i], p = null;
+    try { if (d.fullName && d.fullName.exists) p = String(d.fullName.fsName).toLowerCase(); } catch (e) { p = null; }
+    if (p === target && !a.reopen) {
+      d.activate(); MCP.pinned = d;
+      var info0 = MCP.docInfo(d); info0.alreadyOpen = true; return info0;
+    }
+  }
+  MCP.pinned = app.open(f);
+  var info = MCP.docInfo(MCP.pinned); info.alreadyOpen = false; return info;
+};
+
+/* ---------------- File menu: copies, revert, save/close all, recent files ---------------- */
+
+MCP.filePath = function (doc) {
+  try { if (doc.fullName && doc.fullName.exists) return doc.fullName; } catch (e) { /* never saved */ }
+  return null;
+};
+
+MCP.saveOptionsFor = function (fmt, a) {
+  var o;
+  if (fmt === "pdf") { o = new PDFSaveOptions(); o.preserveEditability = a.pdfCompatible !== false; o.viewAfterSaving = false; return o; }
+  if (fmt === "eps") { o = new EPSSaveOptions(); o.embedLinkedFiles = !!a.embedLinkedFiles; return o; }
+  o = new IllustratorSaveOptions();
+  o.pdfCompatible = a.pdfCompatible !== false; o.embedLinkedFiles = !!a.embedLinkedFiles; o.fontSubsetThreshold = 100;
+  return o;
+};
+
+/*
+ * Save a Copy: write the document to another file while the open document keeps pointing at its own file.
+ * Scripting only has saveAs (which re-targets), so the copy is written with saveAs and the original .ai is
+ * reopened. That needs the original saved first, otherwise unsaved changes would be lost.
+ */
+MCP.ops.save_copy = function (a) {
+  var doc = MCP.doc();
+  var original = MCP.filePath(doc);
+  if (!original) MCP.fail("VALIDATION_ERROR", "The document has never been saved. Use save_file to give it a file first; a copy needs an original to return to.");
+  if (!doc.saved) MCP.fail("CONFIRMATION_REQUIRED", "The document has unsaved changes. Save it first (save_file with no path) so the copy and the original match.");
+  if (String(original.fsName).toLowerCase() === String(new File(a.path).fsName).toLowerCase()) MCP.fail("VALIDATION_ERROR", "The copy path is the document's own file.");
+  /* Illustrator's native save always writes .ai, so a template is written as .ai next to the target and renamed. */
+  var target = a.format === "ait" ? a.path.replace(/\.ait$/i, ".ai") : a.path;
+  if (String(new File(target).fsName).toLowerCase() === String(original.fsName).toLowerCase()) MCP.fail("VALIDATION_ERROR", "Choose a template name different from the document's own file name.");
+  if (a.format === "ait" && new File(target).exists) MCP.fail("FILE_EXISTS", "A file with the template's temporary name exists: " + target);
+  doc.saveAs(new File(target), MCP.saveOptionsFor(a.format, a));
+  if (!new File(target).exists) MCP.fail("ILLUSTRATOR_SCRIPT_ERROR", "Illustrator reported no error but the copy was not written: " + target);
+  app.activeDocument.close(SaveOptions.DONOTSAVECHANGES);
+  if (a.format === "ait") {
+    var finalFile = new File(a.path);
+    if (finalFile.exists) finalFile.remove(); /* overwrite was already approved by the server */
+    if (!new File(target).rename(finalFile.name)) MCP.fail("ILLUSTRATOR_SCRIPT_ERROR", "The template was written as " + target + " but could not be renamed to .ait.");
+  }
+  MCP.pinned = app.open(original);
+  return { copy: a.path, format: a.format, bytes: new File(a.path).length, document: MCP.docInfo(MCP.pinned) };
+};
+
+MCP.ops.revert_document = function () {
+  var doc = MCP.doc();
+  var f = MCP.filePath(doc);
+  if (!f) MCP.fail("VALIDATION_ERROR", "The document has never been saved, so there is nothing to revert to.");
+  var hadChanges = !doc.saved;
+  doc.close(SaveOptions.DONOTSAVECHANGES);
+  MCP.pinned = app.open(f);
+  return { reverted: f.fsName, discardedChanges: hadChanges, document: MCP.docInfo(MCP.pinned) };
+};
+
+MCP.ops.save_all_documents = function () {
+  var saved = [], skipped = [];
+  for (var i = 0; i < app.documents.length; i++) {
+    var d = app.documents[i];
+    if (!MCP.filePath(d)) { skipped.push({ name: d.name, reason: "never saved; use save_file with a path" }); continue; }
+    if (d.saved) { skipped.push({ name: d.name, reason: "no unsaved changes" }); continue; }
+    d.save();
+    saved.push({ name: d.name, path: d.fullName.fsName });
+  }
+  return { saved: saved, skipped: skipped };
+};
+
+/* mode: save (save documents that have a file; refuse if any unsaved one has no file) | discard (close without saving) */
+MCP.ops.close_all_documents = function (a) {
+  var closed = [], refused = [];
+  if (a.mode === "save") {
+    /* A never-saved document can report saved=true while empty; closing it with SAVECHANGES opens a Save dialog
+       that blocks Illustrator, so every document without a file is refused regardless of its saved flag. */
+    var keepSave = {};
+    for (var ks = 0; a.except && ks < a.except.length; ks++) keepSave[a.except[ks]] = 1;
+    for (var c = 0; c < app.documents.length; c++) {
+      var dc = app.documents[c];
+      if (!keepSave[dc.name] && !MCP.filePath(dc)) refused.push(dc.name);
+    }
+    if (refused.length) MCP.fail("CONFIRMATION_REQUIRED", "These documents were never saved and would need a file name: " + refused.join(", ") + ". Save them with save_file first, or close with mode: discard.");
+  }
+  var keep = {};
+  for (var k = 0; a.except && k < a.except.length; k++) keep[a.except[k]] = 1;
+  for (var i = app.documents.length - 1; i >= 0; i--) {
+    var d = app.documents[i];
+    if (keep[d.name]) continue;
+    var dirty = !d.saved, name = d.name;
+    d.close(a.mode === "save" ? SaveOptions.SAVECHANGES : SaveOptions.DONOTSAVECHANGES);
+    closed.push({ name: name, hadUnsavedChanges: dirty, saved: a.mode === "save" && dirty });
+  }
+  MCP.pinned = null;
+  return { closed: closed, remaining: app.documents.length };
+};
+
+/* Illustrator keeps its recent-file list in preferences: plugin/MixedFileList/file0..N/{path,lastOpentime}, not in date order. */
+MCP.ops.list_recent_files = function (a) {
+  var found = [], max = a.limit || 20, slots = 0;
+  try { slots = app.preferences.getIntegerPreference("RecentFileNumber"); } catch (e0) { slots = 0; }
+  if (!slots || slots < 1) slots = 30;
+  for (var i = 0; i < Math.min(slots, 100); i++) {
+    var key = "plugin/MixedFileList/file" + i + "/", p = "", t = "";
+    try { p = app.preferences.getStringPreference(key + "path"); } catch (e) { p = ""; }
+    if (!p) continue;
+    try { t = app.preferences.getStringPreference(key + "lastOpentime"); } catch (e2) { t = ""; }
+    var f = new File(p);
+    found.push({ path: f.fsName, name: decodeURI(f.name), exists: f.exists, lastOpened: t || null });
+  }
+  found.sort(function (x, y) { var a1 = x.lastOpened || "", b1 = y.lastOpened || ""; return a1 < b1 ? 1 : a1 > b1 ? -1 : 0; });
+  var out = found.slice(0, max);
+  for (var k = 0; k < out.length; k++) out[k].index = k;
+  return { files: out, count: out.length };
+};
+
 MCP.ops.inspect_document = function (a) {
   var doc = MCP.doc();
   MCP.useArtboard(doc, a.artboard);

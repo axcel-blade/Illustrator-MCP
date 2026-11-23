@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { randomUUID } from "node:crypto";
 import { mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -14,7 +15,10 @@ const KNOWN_CODES = new Set<string>([
 ]);
 
 /* Ops that choose their own document; the pin is not applied to them. */
-const UNPINNED_OPS = new Set(["status", "list_documents", "create_document", "open_document", "activate_document"]);
+const UNPINNED_OPS = new Set(["status", "list_documents", "create_document", "open_document", "open_file", "activate_document", "save_all_documents", "close_all_documents", "list_recent_files"]);
+
+/** Minimum timeout applied to every bridge call made inside withTimeoutScope (used by background jobs). */
+const timeoutScope = new AsyncLocalStorage<number>();
 
 export interface RunOptions {
   timeoutMs?: number;
@@ -50,6 +54,11 @@ export class IllustratorBridge {
     return this.queue.size;
   }
 
+  /** Run `fn` so that every bridge call it makes waits at least `minTimeoutMs` for Illustrator. */
+  withTimeoutScope<T>(minTimeoutMs: number, fn: () => Promise<T>): Promise<T> {
+    return timeoutScope.run(minTimeoutMs, fn);
+  }
+
   detect(): Promise<DetectionResult> {
     return this.adapter.detect();
   }
@@ -60,7 +69,7 @@ export class IllustratorBridge {
       const id = randomUUID();
       const resultPath = join(this.workDir, `${id}.json`);
       const started = Date.now();
-      const timeoutMs = opts.timeoutMs ?? this.defaultTimeoutMs;
+      const timeoutMs = Math.max(opts.timeoutMs ?? this.defaultTimeoutMs, timeoutScope.getStore() ?? 0);
       try {
         const raw = await withTimeout(
           this.adapter.execute({ op, args, script: buildScript(op, args, resultPath, UNPINNED_OPS.has(op) ? undefined : this.pinnedDocument), resultPath, timeoutMs }),
